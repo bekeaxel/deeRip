@@ -1,0 +1,8 @@
+deemix
+deezer-py
+spotipy
+mutagen
+python-dotenv
+pyyaml
+diskcache
+textual

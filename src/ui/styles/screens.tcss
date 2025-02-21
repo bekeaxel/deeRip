@@ -1,0 +1,114 @@
+# -------- HOME SCREEN --------
+
+#search-bar-home {
+    max-width: 120;
+}
+
+.home-container {
+    padding: 20;
+    align: center middle;
+}
+
+# -------- DOWNLOAD SCREEN --------
+
+.download-container {
+    background: $background;
+    padding: 1;
+}
+
+#search-bar-download {
+    max-width: 100;
+    height: 100%;
+}
+
+#search-container-download {
+    height: 3;
+    width: 100%;
+    align-horizontal: center;
+    margin: 2 0 1 0;
+}
+
+# -------- SETTING SCREEN --------
+
+SettingsScreen Input {
+    width: 65%;
+}
+
+SettingsScreen Select {
+    width: 65%;
+}
+
+.settings-container {
+    padding: 5;
+}
+
+.row {
+    height: auto;
+    min-height: 7;
+    align: left middle;
+    border: solid white;
+}
+
+.setting-descriptor {
+    align: left middle;
+    width: 30;
+    height: auto;
+    margin: 1;
+    # border: solid red;
+}
+
+.change-dir-button {
+    margin-left: 10;
+}
+
+.download-folder {
+    margin: 1 0 1 0;
+}
+
+.connect-btn {
+    margin-left: 1;
+}
+
+# -------- DIRECTORY SCREEN --------
+
+DirectoryScreen Horizontal {
+    align: center middle;
+}
+
+DirectoryScreen Button {
+    margin: 0 3 0 3;
+}
+
+DirectoryScreen DirectoryTree {
+    margin-top: 10;
+}
+
+# -------- POPUP SCREEN --------
+
+PopupScreen {
+    align: center middle;
+}
+
+PopupScreen Button {
+    margin-top: 2;
+    margin-left: 26;
+    align: center middle;
+}
+
+.popup-container {
+    align: center middle;
+    content-align: center middle;
+    width: auto;
+    max-width: 80%;
+    min-width: 50%;
+    height: auto;
+    max-height: 70%;
+    min-height: 40%;
+    background: #1D1D1D;
+}
+
+# -------- SEARCH SCREEN --------
+
+#search-bar-search {
+    max-width: 120;
+}

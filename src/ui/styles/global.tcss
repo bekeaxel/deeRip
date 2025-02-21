@@ -1,0 +1,8 @@
+
+.focus-sink {
+    display: None;
+}
+
+Header {
+    background: $surface;
+}

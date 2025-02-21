@@ -1,0 +1,5 @@
+bit_rate: MP3_128
+concurrency_workers: '8'
+download_folder: ~/Music/deemix
+download_override: true
+env_file: ../../config/tokens.env

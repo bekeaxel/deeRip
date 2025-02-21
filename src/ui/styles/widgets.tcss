@@ -1,0 +1,75 @@
+
+# -------- DOWNLOADS --------
+
+TaskViewer ListView {
+    background: $background;
+    padding: 3 5 3 5;
+    margin-bottom: 4;
+}
+
+ListView:focus {
+    background-tint: $background;
+}
+
+ListItem.-highlight {
+    background: $surface-lighten-1;
+}
+
+ProgressWidget {
+    background: $surface-lighten-1;
+    height: 3;
+    margin: 1;
+    padding: 1 5 1 5; 
+    align-vertical: middle;
+}
+
+ErrorWidget {
+    background: $error;
+    height: 3;
+    margin: 1;
+    padding: 0 5 0 5;
+    align-vertical: middle;
+} 
+
+.row-label {
+    dock: left;
+    align: center middle;
+}
+
+.progress-bar {
+    dock: right;
+}
+
+.remove-btn {
+    # color: $text-primary;
+    dock: right;
+    height: 100%;
+}
+
+
+# -------- SEARCH RESULTS --------
+
+SearchResultView VerticalScroll {
+    background: $background;
+    padding: 1 5 3 5;
+    margin-bottom: 4;
+}
+
+SearchResult Horizontal{
+    height: auto;
+    min-height: 3;
+    align: left middle;
+    background: $surface-lighten-1;
+    margin-bottom: 1;
+    # padding: 1 5 1 5;
+}
+
+.result-label {
+    margin-left: 4;
+}
+
+.download-btn {
+    dock: right;
+    margin-right: 4;
+}
+
