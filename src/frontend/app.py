@@ -4,9 +4,9 @@ from textual import on
 from textual.binding import Binding
 from textual.widgets import Label
 
-from src.ui.messages import *
+from src.frontend.messages import *
 from src.backend.main_controller import Controller
-from src.ui.screens import *
+from src.frontend.screens import *
 from src.backend.configuration import Config
 
 
@@ -26,8 +26,8 @@ class DeeRipApp(App):
 
     def __init__(self):
         super().__init__()
-        self.controller = Controller()
-        self.config = Config()
+        self.controller: Controller = Controller()
+        self.config: Config = Config()
         self.controller.subscribe(self)
         self.controller.login()
 
@@ -38,6 +38,7 @@ class DeeRipApp(App):
     @on(SearchQueryRequestMessage)
     def on_search_query_request(self, message: SearchQueryRequestMessage):
         message.bubble = False
+        self.query = message.query
         if self.controller.valid_url(message.query):
             self.push_screen("downloads")
             self.get_screen("downloads").post_message(message)

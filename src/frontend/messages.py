@@ -6,6 +6,12 @@ from src.backend.tasks import State
 # Backend -> frontend messages
 
 
+class ConversionTaskCreatedMessage(Message):
+    def __init__(self, task_id: str):
+        self.task_id: str = task_id
+        super().__init__()
+
+
 class ProgressUpdateMessage(Message):
     def __init__(self, task_id: str, progress: float):
         self.task_id: str = task_id
@@ -39,12 +45,6 @@ class TaskFailedMessage(Message):
 class SearchQueryRequestMessage(Message):
     def __init__(self, query: str):
         self.query = query
-        super().__init__()
-
-
-class DownloadTasksCreatedMessage(Message):
-    def __init__(self, task_id: str):
-        self.task_id: str = task_id
         super().__init__()
 
 

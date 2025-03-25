@@ -2,15 +2,14 @@ from queue import Queue
 from pathlib import Path
 from typing import Iterable
 
-from textual.widget import Widget
 from textual.reactive import reactive
-from textual.widget import Widget
+from textual import events
 from textual.widgets import *
 from textual.containers import *
 from textual.css.query import NoMatches
 from textual import work, on
 
-from src.ui.messages import *
+from src.frontend.messages import *
 from src.backend.exceptions import *
 from src.backend.main_controller import Controller
 
@@ -34,7 +33,8 @@ class SearchBar(Static):
 
     @on(Input.Submitted)
     async def on_input_submitted(self, message: Input.Submitted):
-        self.app.post_message(SearchQueryRequestMessage(message.value))
+        if value := message.value.strip():
+            self.app.post_message(SearchQueryRequestMessage(value))
 
 
 class TaskViewer(Static):
@@ -42,11 +42,13 @@ class TaskViewer(Static):
     def __init__(self):
         self.controller: Controller = self.app.controller
         self.controller.subscribe(self)
-        self.tasks: list[str] = []
         self.conversion_in_progress = False
         super().__init__()
 
     def compose(self):
+        tasks = self.controller.get_tasks()
+        print("composing taskviewer")
+        print(f"got tasks: {tasks}")
         components = [
             (
                 ProgressWidget(
@@ -64,76 +66,53 @@ class TaskViewer(Static):
                     conversion=True,
                 )
             )
-            for task in self.controller.get_tasks()
+            for task in tasks
         ]
         yield ListView(*components)
 
     # ---- Workers ----
+
     @work(thread=True)
-    def create_download_tasks(self, task_id: str, tasks):
+    def create_download_tasks(self, task_id: str, songs):
         list_view = self.query_one(ListView)
 
-        i = 1
         download_widgets = []
-        for task in tasks:
-            if not task.get("error"):
+        for song in songs:
+            if not song.get("error"):
                 download_widgets.append(
                     ProgressWidget(
-                        task_id=f"task_{task['task_id']}",
-                        song_id=task["song_id"],
-                        title=task["title"],
-                        artist=task["artist"],
-                        album=task["album"],
-                        index=i,
+                        task_id=f"task_{song['task_id']}",
+                        song_id=song["song_id"],
+                        title=song["title"],
+                        artist=song["artist"],
+                        album=song["album"],
                     )
                 )
             else:
-                print(f"in widget: {task}")
+                print(f"in widget: {song}")
                 download_widgets.append(
                     ErrorWidget(
-                        task_id=f"task_{task['task_id']}",
-                        song_id=task["song_id"],
-                        title=task["title"],
-                        artist=task["artist"],
-                        album=task["album"],
-                        index=i,
+                        task_id=f"task_{song['task_id']}",
+                        song_id=song["song_id"],
+                        title=song["title"],
+                        artist=song["artist"],
+                        album=song["album"],
                     )
                 )
-            i += 1
 
         # remove conversion task
         self.app.call_from_thread(list_view.remove_children, f"#task_{task_id}")
 
-        for task in tasks:
-            self.tasks.append(task["task_id"])
-
+        # render new widgets
         self.app.call_from_thread(list_view.insert, 0, download_widgets)
-
-        # for widget in download_widgets:
-        #     self.app.call_from_thread(container.mount, widget)
-
-        self.post_message(DownloadTasksCreatedMessage(task_id))
 
     @work(thread=True)
     def create_conversion_task(self, query):
-        task_id = self.controller.create_conversion_task(query)
-        self.tasks.append(task_id)
-        self.app.call_from_thread(
-            self.query_one(ListView).insert,
-            0,
-            [ProgressWidget(f"task_{task_id}", conversion=True)],
-        )
-
-    @work(thread=True)
-    def start_download(self, task_id):
-        self.controller.download(task_id)
+        self.controller.create_job(query)
 
     @work(thread=True)
     def clear(self):
         self.controller.remove_all_tasks()
-        # for task_id in self.tasks:
-        #     self.controller.remove_task(UUID(task_id))
-        self.tasks = []
         container = self.query_one(VerticalScroll)
         self.app.call_from_thread(container.remove_children, ProgressWidget)
         self.app.call_from_thread(container.remove_children, ErrorWidget)
@@ -146,27 +125,17 @@ class TaskViewer(Static):
                 message.progress
             )
         except NoMatches:
-            pass  # nothing to be done, the widget is probably already removed.
+            pass  # nothing to be done, the widget is either not created yet or removed.
+
+    @on(ConversionTaskCreatedMessage)
+    def on_conversion_task_created(self, message: ConversionTaskCreatedMessage):
+        self.query_one(ListView).insert(
+            0, [ProgressWidget(f"task_{message.task_id}", conversion=True)]
+        )
 
     @on(ConversionCompleteMessage)
     def on_conversion_complete(self, message: ConversionCompleteMessage):
-        print("ConversionComplete fångad i frontend")
         self.create_download_tasks(message.task_id, message.tasks)
-
-    @on(DownloadTasksCreatedMessage)
-    def on_download_tasks_created(self, message: DownloadTasksCreatedMessage):
-        print("starting download")
-        print(type(message.task_id))
-        self.start_download(UUID(message.task_id))
-
-    @on(Button.Pressed)
-    def on_button_pressed(self, event: Button.Pressed):
-        task_id = event.button.id.removeprefix("remove_task_")
-        print(f"ta bort {task_id}")
-        print(self.tasks)
-        self.tasks.remove(task_id)
-        self.controller.remove_task(UUID(task_id))
-        self.query_one(VerticalScroll).remove_children(f"#task_{task_id}")
 
     @on(TaskFailedMessage)
     def on_task_failed(self, message: TaskFailedMessage):
@@ -189,7 +158,6 @@ class ProgressWidget(ListItem):
         album=None,
         progress=0,
         conversion=False,
-        index=0,
     ):
         super().__init__(id=task_id)
         self.song_id = song_id
@@ -198,27 +166,34 @@ class ProgressWidget(ListItem):
         self.album = album
         self.progress = progress
         self.conversion = conversion
-        self.index = index
 
     def compose(self):
         components = [
             (
-                Label(f"{self.index}. {self.title}", classes="row-label")
+                Label(
+                    f" {self.title} - {self.artist} - {self.album}",
+                    classes="row-label",
+                )
                 if self.title
                 else Label(f"Converting songs...", classes="row-label")
             )
         ]
 
-        components.append(
-            ProgressBar(total=100, show_eta=False, classes="progress-bar")
-        )
+        bar = ProgressBar(total=100, show_eta=False, classes="progress-bar")
+        bar.update(progress=self.progress)
+        components.append(bar)
 
         yield Horizontal(*components)
 
     def update_progress(self, progress):
-        self.query_one(ProgressBar).update(
-            progress=100 if progress > EPSILON else progress
-        )
+        self.progress = progress
+        self.query_one(ProgressBar).update(progress=progress)
+
+    @on(events.Click)
+    def on_widget_click(self, event: events.Click):
+        from src.frontend.screens import TaskInfoScreen
+
+        self.app.push_screen(TaskInfoScreen(self))
 
 
 class ErrorWidget(ListItem):
@@ -234,15 +209,9 @@ class ErrorWidget(ListItem):
     def compose(self):
         yield Horizontal(
             Label(
-                f"{self.index}. {self.title} by {self.artist} from {self.album}",
+                f"{self.index}. {self.title} - {self.artist} - {self.album}",
                 classes="row-label",
-            ),
-            Button(
-                "remove",
-                variant="default",
-                id=f"remove_{self.id}",
-                classes="remove-btn",
-            ),
+            )
         )
 
 
@@ -269,16 +238,21 @@ class SearchResult(Static):
         self.duration = duration
         self.widths = widths
 
+    def trim(cls, s: str, w: int):
+        return s.ljust(w) if len(s) <= w - 10 else f"{s[:w-10].strip()}...".ljust(w)
+
     def compose(self):
         yield Horizontal(
             Label(
-                self.title.ljust(self.widths[0])
-                + self.artist.ljust(self.widths[1])
-                + self.album.ljust(self.widths[2])
+                self.trim(self.title, self.widths[0])
+                + self.trim(self.artist, self.widths[1])
+                + self.trim(self.album, self.widths[2])
                 + self.duration.rjust(self.widths[3]),
                 classes="result-label",
             ),
-            Button("download", id=f"d_{self.id}", classes="download-btn"),
+            Button(
+                "⬇", id=f"d_{self.id}", classes="download-btn", tooltip="I WANT THIS!"
+            ),
             classes="result-row",
         )
 
@@ -296,8 +270,20 @@ class SearchResultView(Static):
 
     @work(thread=True)
     def add_results(self, results):
+        self.app.call_from_thread(self.query_one(VerticalScroll).remove_children)
         self.results = results
         widths = self.get_widths(results)
+        self.app.call_from_thread(
+            self.mount,
+            Label(
+                "         Title".ljust(widths[0])
+                + "         Artist".ljust(widths[1])
+                + "         Album".ljust(widths[2])
+                + "         Duration".rjust(widths[3]),
+                classes="column-label",
+            ),
+        )
+        # yield column headers
         for result in results:
             self.app.call_from_thread(
                 self.query_one(VerticalScroll).mount,
@@ -312,10 +298,26 @@ class SearchResultView(Static):
             )
 
     def get_widths(self, results):
-        def width(key):
-            return max([len(x[key]) for x in results]) + 10
+        def width(key, max_chars):
+            longest_chars = max([len(x[key]) for x in results]) + 20
 
-        return [width("title"), width("artist"), width("album"), 5]
+            return min(longest_chars, max_chars)
+
+        total_width = self.app.size.width - 40
+
+        widths = [
+            width("title", total_width // 3),
+            width("artist", total_width // 3),
+            width("album", total_width // 4),
+        ]
+
+        diff = total_width - sum(widths) - 5  # leaving room for duration column
+        widths = [w + diff // 3 for w in widths]  # fill out empty space
+        widths.append(
+            max(max(total_width - sum(widths), 0), 5)
+        )  # adding duration column
+
+        return widths
 
     def to_display_time(cls, seconds):
         m = int(seconds / 60)
@@ -326,7 +328,11 @@ class SearchResultView(Static):
         else:
             return f"{m}:{s}"
 
+    @work(thread=True)
+    def create_job(self, song_id):
+        self.controller.create_job(str(song_id))
+
     @on(Button.Pressed)
     def on_download_button_pressed(self, event: Button.Pressed):
         song_id = int(event.button.id.removeprefix("d_result_"))
-        self.controller.create_download_task(song_id)
+        self.create_job(song_id)

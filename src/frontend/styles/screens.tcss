@@ -1,3 +1,4 @@
+
 # -------- HOME SCREEN --------
 
 #search-bar-home {
@@ -28,6 +29,14 @@
     margin: 2 0 1 0;
 }
 
+.info-popup-screen {
+
+}
+
+TaskInfoScreen {
+    
+}
+
 # -------- SETTING SCREEN --------
 
 SettingsScreen Input {
@@ -46,7 +55,7 @@ SettingsScreen Select {
     height: auto;
     min-height: 7;
     align: left middle;
-    border: solid white;
+    # border: solid white;s
 }
 
 .setting-descriptor {
@@ -112,3 +121,5 @@ PopupScreen Button {
 #search-bar-search {
     max-width: 120;
 }
+
+

@@ -27,7 +27,7 @@ ErrorWidget {
     background: $error;
     height: 3;
     margin: 1;
-    padding: 0 5 0 5;
+    padding: 1 5 1 5;
     align-vertical: middle;
 } 
 
@@ -49,6 +49,10 @@ ErrorWidget {
 
 # -------- SEARCH RESULTS --------
 
+# SearchResultView {
+#     border: solid white;
+# }
+
 SearchResultView VerticalScroll {
     background: $background;
     padding: 1 5 3 5;
@@ -64,12 +68,19 @@ SearchResult Horizontal{
     # padding: 1 5 1 5;
 }
 
+.column-label {
+    dock: top;
+
+}
+
 .result-label {
     margin-left: 4;
+    width: 100%;
 }
 
 .download-btn {
     dock: right;
     margin-right: 4;
+    max-width: 6;
 }
 

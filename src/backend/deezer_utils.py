@@ -3,13 +3,15 @@ from deezer import Deezer
 from src.backend.models import *
 from src.backend.download_objects import Single
 from src.backend.task_controller import TaskController
+from src.backend.message_dispatcher import MessageDispatcher
 
 
 class DeezerUtils:
 
-    def __init__(self, dz: Deezer, task_controller: TaskController):
+    def __init__(self, dz: Deezer, task_controller: TaskController, dispatcher):
         self.dz: Deezer = dz
         self.task_controller: TaskController = task_controller
+        self.dispatcher: MessageDispatcher = dispatcher
 
     def search(self, query: str) -> list[dict]:
         return [

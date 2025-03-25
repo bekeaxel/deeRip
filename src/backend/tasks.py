@@ -25,15 +25,27 @@ class Task:
         self.is_cancelled = False
 
     def update_progress(self, progress):
+        """Increment progress of task by progress"""
         with self.lock:
             self.progress += progress
             if self.progress > EPSILON:
                 self.state = State.COMPLETE
             return self.progress
 
+    def set_progress(self, progress):
+        """Set progress of task to progress"""
+        with self.lock:
+            self.progress = progress
+            if self.progress >= 99:
+                self.state = State.COMPLETE
+
     def get_progress(self):
         with self.lock:
             return self.progress
+
+    def finish_task(self):
+        with self.lock:
+            self.state = State.COMPLETE
 
     def start_task(self):
         with self.lock:
@@ -57,7 +69,7 @@ class DownloadTask(Task):
         progress=0,
         state: State = State.PENDING,
     ):
-        self.track = track
+        self.track: Track = track
         self.error_obj = error_obj
         self.error = error
         super().__init__(progress, state)

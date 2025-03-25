@@ -18,10 +18,10 @@ from textual.containers import *
 from textual.validation import Integer, Length
 from textual.events import Blur
 
-from src.ui.messages import *
+from src.frontend.messages import *
 from src.backend.main_controller import Controller
 from src.backend.configuration import Config
-from src.ui.widgets import *
+from src.frontend.widgets import *
 
 
 class HomeScreen(Screen):
@@ -41,12 +41,9 @@ class HomeScreen(Screen):
         yield Button("", id="focus_sink", classes="focus-sink")  # focus sink
 
     def _on_screen_resume(self):
+        print("home screen resumed")
         self.screen.query_one("#focus_sink").focus()
         return super()._on_screen_resume()
-
-    def _post_mount(self):
-        print(self.children)
-        print(self.query_one(Container).children)
 
 
 class DownloadScreen(Screen):
@@ -65,11 +62,14 @@ class DownloadScreen(Screen):
         self.controller.subscribe(self)
         super().__init__()
 
-    def _on_screen_resume(self):
-        self.screen.query_one("#focus_sink").focus()
+    async def _on_screen_resume(self):
+        # recomposing task viewer to sync all tasks
+        await self.query_one(Vertical).query_one(TaskViewer).recompose()
+        self.query_one("#focus_sink").focus()
         return super()._on_screen_resume()
 
     def compose(self):
+        print("compose download screen")
         yield LoginHeader()
         yield Vertical(
             Container(
@@ -106,9 +106,10 @@ class SearchScreen(Screen):
         self.controller.subscribe(self)
         super().__init__()
 
-    def _on_screen_resume(self):
-        self.screen.query_one("#focus_sink").focus()
-        return super()._on_screen_resume()
+    # def _on_screen_resume(self):
+    #     self.screen.query_one("#focus_sink").focus()
+    #     self.query_one(Container).query_one(SearchBar).set_value(self.app.query)
+    #     return super()._on_screen_resume()
 
     def compose(self):
         yield LoginHeader()
@@ -172,7 +173,7 @@ class SettingsScreen(Screen):
             Horizontal(
                 Label("Download folder", classes="setting-descriptor"),
                 Label(
-                    self.config.load_config()["download_folder"],
+                    self.config.load_config().get("download_folder") or "not set",
                     id="download_folder_label",
                     classes="download-folder",
                 ),
@@ -299,7 +300,6 @@ class SettingsScreen(Screen):
 
     @on(Switch.Changed)
     def on_override_changed(self, event: Switch.Changed):
-        self.app.title = "123"
         updates = self.config.load_config()
         updates["download_override"] = event.value
         self.config.update_config(updates)
@@ -381,6 +381,29 @@ class DirectoryScreen(ModalScreen):
         self.app.pop_screen()
 
 
+class TaskInfoScreen(ModalScreen):
+    def __init__(self, widget):
+        self.widget = widget
+        super().__init__(id=f"info_{widget.id}")
+
+    def compose(self):
+        yield Vertical(
+            Label(f"task_id  - {self.widget.id}"),
+            Label(f"song_id  - {self.widget.song_id}"),
+            Label(f"title    - {self.widget.title}"),
+            Label(f"artist   - {self.widget.artist}"),
+            Label(f"album    - {self.widget.album}"),
+            Label(f"progress - {self.widget.progress}"),
+            Label(f"index    - {self.widget.index}"),
+            Button("Close", "warning"),
+        )
+        yield Button("", id="focus_sink", classes="focus-sink")  # focus sink
+
+    @on(Button.Pressed)
+    def on_okay_button_pressed(self):
+        self.app.pop_screen()
+
+
 class PopupScreen(ModalScreen):
 
     def __init__(self, message: str, id=None):
@@ -389,7 +412,7 @@ class PopupScreen(ModalScreen):
 
     def compose(self):
         yield Vertical(
-            Label(self.message), Button("Okay", "warning"), classes="popup-container"
+            Label(self.message), Button("Close", "warning"), classes="popup-container"
         )
         yield Button("", id="focus_sink", classes="focus-sink")  # focus sink
 

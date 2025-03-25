@@ -4,5 +4,5 @@ spotipy
 mutagen
 python-dotenv
 pyyaml
-diskcache
 textual
+textual-dev

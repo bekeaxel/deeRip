@@ -14,7 +14,6 @@ from deezer import Deezer
 from deezer.errors import DataException
 
 from src.backend.exceptions import *
-from src.backend.track_cache import Cache
 from src.backend.models import *
 from src.backend.configuration import Config
 from src.backend.tasks import *
@@ -40,7 +39,6 @@ class Converter:
         self.config: Config = config
         self.dz: Deezer = dz
         self.logged_in: bool = False
-        self.cache: Cache = Cache()
         self.task_controller: TaskController = task_controller
         self.thread_executor = ThreadPoolExecutor(
             int(self.config.load_config()["concurrency_workers"])
@@ -108,25 +106,25 @@ class Converter:
                 else None
             )
 
-    def generate_download_obj(self, link: str, task_id: UUID):
+    def generate_download_obj(self, link: str, task_id: UUID) -> IDownloadObject:
         """generates a download object from a link (track, playlist, album)"""
         if DEBUG:
             print("@generate_download_obj")
 
         if "track" in link:
-            return self.generate_track_download_obj(
+            return self._generate_track_download_obj(
                 self.extract_link_id(link, DownloadType.TRACK), task_id
             )
         elif "playlist" in link:
-            return self.generate_playlist_download_obj(
+            return self._generate_playlist_download_obj(
                 self.extract_link_id(link, DownloadType.PLAYLIST), task_id
             )
         elif "album" in link:
-            return self.generate_album_download_obj(
+            return self._generate_album_download_obj(
                 self.extract_link_id(link, DownloadType.ALBUM), task_id
             )
 
-    def generate_track_download_obj(self, link_id: str, task_id: UUID) -> Single:
+    def _generate_track_download_obj(self, link_id: str, task_id: UUID) -> Single:
         """generates a track download object"""
         if not link_id:
             raise InvalidSpotifyLinkException()
@@ -134,7 +132,7 @@ class Converter:
         if (track_data := self.sp.track(link_id)) is None:
             raise InvalidSpotifyLinkException()
 
-        track = self.safe_convert_track(
+        track = self._safe_convert_track(
             track_data, task_id
         )  # <- denna returnerar None när vanlig Exception fångas. Kolla varför den kastas.
 
@@ -152,7 +150,7 @@ class Converter:
 
         return Single(task_id, track.id, track.title, track.artist, track.album, task)
 
-    def generate_playlist_download_obj(self, link_id, task_id: UUID) -> Collection:
+    def _generate_playlist_download_obj(self, link_id, task_id: UUID) -> Collection:
         """generates a playlist download object"""
         if DEBUG:
             print("@generate_playlist_download_obj")
@@ -165,7 +163,7 @@ class Converter:
             raise InvalidSpotifyLinkException()
 
         # get all tracks (pagination)
-        tracks_data = self.pull_tracks(playlist)
+        tracks_data = self._pull_tracks(playlist)
 
         spotify_tracks_data = []
         for item in tracks_data:
@@ -175,9 +173,9 @@ class Converter:
         collection = Collection(task_id, playlist["name"])
         collection.conversion_data = spotify_tracks_data
 
-        return self.convert_tracks(collection, task_id)
+        return self._convert_tracks(collection, task_id)
 
-    def generate_album_download_obj(self, link_id: str, task_id: UUID) -> Collection:
+    def _generate_album_download_obj(self, link_id: str, task_id: UUID) -> Collection:
         """Generates an album download_obj."""
 
         if not link_id:
@@ -191,7 +189,7 @@ class Converter:
         download_obj = Collection(task_id, album["name"])
 
         # get all tracks in case of pagination
-        tracks_data = self.pull_tracks(album)
+        tracks_data = self._pull_tracks(album)
 
         # convert all tracks to regular spotify format
         tracks_data = [self.sp.track(track["id"]) for track in tracks_data]
@@ -199,9 +197,9 @@ class Converter:
         # conversion ready
         download_obj.conversion_data = tracks_data
 
-        return self.convert_tracks(download_obj, task_id)
+        return self._convert_tracks(download_obj, task_id)
 
-    def pull_tracks(self, data):
+    def _pull_tracks(self, data):
         tracks_temp = []
         tracks_temp.extend(data["tracks"]["items"])
         if data["tracks"]["next"]:
@@ -213,7 +211,7 @@ class Converter:
 
         return tracks_temp
 
-    def convert_tracks(self, download_obj: Collection, task_id: UUID) -> Collection:
+    def _convert_tracks(self, download_obj: Collection, task_id: UUID) -> Collection:
         # converts data from spotify to deezer
         if DEBUG:
             print("@convert")
@@ -231,7 +229,7 @@ class Converter:
         try:
             for track in self.thread_executor.map(
                 partial(
-                    self.safe_convert_track,
+                    self._safe_convert_track,
                     task_id=task_id,
                     size=len(download_obj.conversion_data),
                 ),
@@ -256,10 +254,10 @@ class Converter:
             print(e)
             raise ConversionCancelledException()
 
-    def safe_convert_track(self, track_data: dict, task_id: UUID, size: int = 1):
+    def _safe_convert_track(self, track_data: dict, task_id: UUID, size: int = 1):
 
         try:
-            return Track.parse_track(self.convert_track(track_data, task_id, size))
+            return Track.parse_track(self._convert_track(track_data, task_id, size))
         except TrackNotFoundOnDeezerException as e:
             print(e)
             print(f"Track not found {track_data}")
@@ -274,7 +272,7 @@ class Converter:
             print("Conversion cancelled")
             raise ConversionCancelledException()
 
-    def convert_track(self, track_data: dict, task_id: UUID, size: int = 1) -> dict:
+    def _convert_track(self, track_data: dict, task_id: UUID, size: int = 1) -> dict:
         """Convert a track using ISRC or fallback to track metadata search."""
 
         if DEBUG:

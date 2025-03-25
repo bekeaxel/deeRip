@@ -52,13 +52,6 @@ class Downloader:
             int(self.config.load_config()["concurrency_workers"])
         )
 
-    def restart_executor(self):
-        print("downloader cancelled")
-        self.thread_executor.shutdown(wait=False, cancel_futures=True)
-        self.thread_executor = ThreadPoolExecutor(
-            int(self.config.load_config()["concurrency_workers"])
-        )
-
     def start(self):
         """start downloading a download_obj"""
         # check if d_obj is single track, album or playlist - start with playlist
@@ -77,52 +70,54 @@ class Downloader:
         """Downloads a track to disk. This method can be run in parallell"""
 
         # downloads a given download object, playlist info is in self.download_obj
-        if not task.error and not task.is_cancelled:
-            config = self.config.load_config()
-            track = task.track
+        if task.error or self.task_controller.task_is_cancelled(task.id):
+            return
 
-            if isinstance(self.__download_obj, Collection):
-                playlist_name = self.__download_obj.title
-                download_path = f"{config["download_folder"]}/{playlist_name}"
-            else:
-                download_path = config["download_folder"]
+        config = self.config.load_config()
+        track = task.track
 
-            # return if we don't want to override downloads
-            if Path(download_path).exists() and not config["download_override"]:
-                self.task_controller.update_task_progress(task.id, 100)
-                return
+        if isinstance(self.__download_obj, Collection):
+            playlist_name = self.__download_obj.title
+            download_path = f"{config["download_folder"]}/{playlist_name}"
+        else:
+            download_path = config["download_folder"]
 
-            # Create download location folder if it does not exist
-            Path(download_path).mkdir(parents=True, exist_ok=True)
+        # return if we don't want to override downloads
+        if Path(download_path).exists() and not config["download_override"]:
+            self.task_controller.update_task_progress(task.id, 100)
+            return
 
-            # Get the download url for streaming
-            download_url: str = self.get_download_url(track, config["bit_rate"])
+        # Create download location folder if it does not exist
+        Path(download_path).mkdir(parents=True, exist_ok=True)
 
-            if not isinstance(download_url, DeezerError) and download_url != None:
+        # Get the download url for streaming
+        download_url: str = self.get_download_url(track, config["bit_rate"])
 
-                # Creating full download path
-                file_path: str = f"{download_path}/{track.title}{EXTENSION}"
+        if not isinstance(download_url, DeezerError) and download_url != None:
 
-                # stream track to file
-                try:
-                    self.stream_track_to_file(
-                        track=track,
-                        task_id=task.id,
-                        path=file_path,
-                        url=download_url,
-                    )
+            # Creating full download path
+            file_path: str = f"{download_path}/{track.title}{EXTENSION}"
 
-                    # download image to file
-                    image = self.download_image(track)
+            # stream track to file
+            try:
+                self.stream_track_to_file(
+                    track=track,
+                    task_id=task.id,
+                    path=file_path,
+                    url=download_url,
+                )
 
-                    # tag file
-                    print(file_path)
-                    tag_mp3_file(track, file_path, image)
+                # download image to file
+                image = self.download_image(track)
 
-                    print(f"download finish: {track.title}")
-                except DownloadException:
-                    self.task_controller.fail_task(task.id)
-                    print("token expired")
+                # tag file
+                print(file_path)
+                tag_mp3_file(track, file_path, image)
+
+                print(f"download finish: {track.title}")
+            except DownloadException:
+                self.task_controller.fail_task(task.id)
+                print("token expired")
 
     def stream_track_to_file(self, track: Track, task_id, path: str, url: str):
         """Downloads song content to file"""
@@ -143,8 +138,11 @@ class Downloader:
                 if request.headers["Content-length"] == 0:
                     raise
 
+                print(f"hej {content_length}")
+
                 with open(path, "wb") as outputStream:
-                    downloaded = 0
+                    downloaded = 1  # stops at 99% if 0
+                    temp = 1
                     for chunk in request.iter_content(2048 * 3):
                         if chunk:
                             if len(chunk) >= 2048:
@@ -152,12 +150,14 @@ class Downloader:
                                     crypto.decryptChunk(blowfish_key, chunk[0:2048])
                                     + chunk[2048:]
                                 )
-                            outputStream.write(chunk)
-                            downloaded += len(chunk)
 
-                            if downloaded % 10 == 0:
+                            outputStream.write(chunk)
+
+                            temp += len(chunk) / content_length * 100
+                            if int(temp - downloaded) >= 1:
+                                downloaded = int(temp)
                                 self.task_controller.update_task_progress(
-                                    task_id, (downloaded / content_length) * 100
+                                    task_id, downloaded
                                 )
 
         except (SSLError, u3SSLError):

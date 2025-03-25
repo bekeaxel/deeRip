@@ -1,4 +1,4 @@
-from src.ui.messages import *
+from src.frontend.messages import *
 
 
 class MessageDispatcher:
@@ -8,6 +8,9 @@ class MessageDispatcher:
 
     def subsribe(self, subscriber):
         self._subscribers.append(subscriber)
+
+    def publish_conversion_task_created_message(self, task_id: UUID):
+        self.publish(ConversionTaskCreatedMessage(str(task_id)))
 
     def publish_update_progress_message(self, task_id: UUID, progress):
         self.publish(ProgressUpdateMessage(str(task_id), progress))

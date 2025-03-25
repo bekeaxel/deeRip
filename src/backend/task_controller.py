@@ -3,7 +3,7 @@ from uuid import UUID
 
 from src.backend.tasks import *
 from src.backend.message_dispatcher import MessageDispatcher
-from src.ui.messages import *
+from src.frontend.messages import *
 
 
 class TaskController:
@@ -18,16 +18,18 @@ class TaskController:
         self, track=None, error_obj=None, error=False
     ) -> tuple[UUID, Task]:
         with self._lock:
+            print(f"before creating download task {self._tasks}")
             task = DownloadTask(track=track, error_obj=error_obj, error=error)
             self._tasks[task.id] = task
             print(f"Download task created id={task.id}")
+            print(f"all tasks {self._tasks}")
             return task.id, task
 
     def create_conversion_task(self, link) -> UUID:
         with self._lock:
             task = ConversionTask(link)
             self._tasks[task.id] = task
-
+            self._dispatcher.publish_conversion_task_created_message(task.id)
             return task.id
 
     def task_is_done(self, task_id) -> bool:
@@ -44,17 +46,23 @@ class TaskController:
         for task_id in self._tasks.keys():
             self.cancel_task(task_id)
 
-        # with self._lock:
-        #     self._tasks = {}
-
     def update_task_progress(self, task_id: UUID, progress: float) -> None:
         if task := self._tasks.get(task_id):
+            task.set_progress(progress)
             self._dispatcher.publish_update_progress_message(
-                task_id=task_id, progress=task.update_progress(progress)
+                task_id=task_id, progress=progress
             )
+
+    def finish_task(self, task_id) -> None:
+        if task := self._tasks.get(task_id):
+            if isinstance(task, ConversionTask):
+                self._tasks.pop(task_id)
+            else:
+                task.finish_task()
 
     def start_task(self, task_id) -> None:
         if task := self._tasks.get(task_id):
+
             task.start_task()
 
     def fail_task(self, task_id) -> None:
@@ -68,18 +76,34 @@ class TaskController:
     def get_all_tasks(self) -> list[dict]:
         tasks = []
         for task in self._tasks.values():
-            if isinstance(task, ConversionTask):
-                tasks.append({"task_id": str(task.id), "progress": task.get_progress()})
-            elif isinstance(task, DownloadTask):
-                tasks.append(
-                    {
-                        "task_id": str(task.id),
-                        "progress": task.get_progress(),
-                        "song_id": task.song_id,
-                        "title": task.title,
-                        "artist": task.artist,
-                        "album": task.album,
-                    }
-                )
+            if not task.state == State.CANCELLED:
+                if isinstance(task, ConversionTask):
+                    tasks.append(
+                        {"task_id": str(task.id), "progress": task.get_progress()}
+                    )
+                elif isinstance(task, DownloadTask):
+                    print(f"task progress {task.progress} - {task.track.title}")
+                    tasks.append(
+                        {
+                            "task_id": str(task.id),
+                            "song_id": task.track.id,
+                            "title": task.track.title,
+                            "artist": task.track.artist.name,
+                            "album": task.track.album.title,
+                            "error": task.error,
+                            "progress": task.progress,
+                        }
+                        if not task.error
+                        else {
+                            "task_id": str(task.id),
+                            "song_id": task.error_obj.id,
+                            "title": task.error_obj.title,
+                            "artist": task.error_obj.artist,
+                            "album": task.error_obj.album,
+                            "error": task.error,
+                        }
+                    )
 
+        print(f"getting all tasks {tasks}")
+        tasks.reverse()
         return tasks
