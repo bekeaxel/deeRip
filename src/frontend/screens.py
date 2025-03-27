@@ -155,6 +155,8 @@ class SettingsScreen(Screen):
                 return 1
             case "MP3_128":
                 return 2
+            case "FLAC":
+                return 3
             case _:
                 return 2
 
@@ -164,6 +166,8 @@ class SettingsScreen(Screen):
                 return "MP3_320"
             case 2:
                 return "MP3_128"
+            case 3:
+                return "FLAC"
 
     def compose(self):
         yield LoginHeader()
@@ -187,7 +191,7 @@ class SettingsScreen(Screen):
             Horizontal(
                 Label("Bit rate", classes="setting-descriptor"),
                 Select(
-                    options=[("MP3 320 Mbps", 1), ("MP3 128 Mbps", 2)],
+                    options=[("MP3 320 Mbps", 1), ("MP3 128 Mbps", 2), ("FLAC", 3)],
                     prompt="Bit rate",
                     value=self.bit_rate_config_2_select(),
                     allow_blank=False,
@@ -292,7 +296,7 @@ class SettingsScreen(Screen):
             self.query_one("#bit_rate", Select).value = 2
             self.app.push_screen(
                 PopupScreen(
-                    "You cannot stream with this quality. Upgrade your deezer subscription"
+                    "You cannot stream with this quality. Upgrade your deezer subscription or login"
                 )
             )
 

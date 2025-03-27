@@ -74,6 +74,8 @@ class Controller:
 
     def can_stream_with_bit_rate(self, bit_rate: str) -> bool:
         match bit_rate:
+            case "FLAC":
+                return self.dz.current_user.get("can_stream_lossless")
             case "MP3_320":
                 return self.dz.current_user.get("can_stream_hq")
             case _:

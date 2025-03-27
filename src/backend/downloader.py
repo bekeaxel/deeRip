@@ -96,7 +96,8 @@ class Downloader:
         if not isinstance(download_url, DeezerError) and download_url != None:
 
             # Creating full download path
-            file_path: str = f"{download_path}/{track.title}{EXTENSION}"
+            extension = self.get_extension()
+            file_path: str = f"{download_path}/{track.title}{extension}"
 
             # stream track to file
             try:
@@ -183,3 +184,10 @@ class Downloader:
 
     def handle_playlist_download(self, results):
         print("download complete!")
+
+    def get_extension(self):
+        match self.config.load_config()["bit_rate"]:
+            case "MP3_128" | "MP3_320":
+                return ".mp3"
+            case "FLAC":
+                return ".FLAC"

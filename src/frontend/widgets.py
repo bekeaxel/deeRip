@@ -220,7 +220,7 @@ class FilteredDirectoryTree(DirectoryTree):
 class LoginHeader(Header):
 
     def __init__(self):
-        super().__init__()
+        super().__init__(show_clock=True)
         self.tall = True
 
 
