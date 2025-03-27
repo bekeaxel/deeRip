@@ -3,3 +3,4 @@ __pycache__
 developer_notes.md
 .DS_Store
 config/tokens.env
+config/config.yml
