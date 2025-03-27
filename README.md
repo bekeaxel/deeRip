@@ -1,6 +1,6 @@
 # deeRip
 
-Deerip is a converter/downloader for Spotify and Deezer. Run the commands below to get started. 
+Deerip is a converter/downloader for Spotify and Deezer. It was built using python and Textual (shoutout) and runs straight in your terminal! Run the commands below to get started. 
 
 
 ## System Requirements
