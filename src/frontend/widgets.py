@@ -198,18 +198,17 @@ class ProgressWidget(ListItem):
 
 class ErrorWidget(ListItem):
 
-    def __init__(self, task_id, song_id, title, artist, album, index=0):
+    def __init__(self, task_id, song_id, title, artist, album):
         super().__init__(id=task_id)
         self.song_id = song_id
         self.title = title
         self.artist = artist
         self.album = album
-        self.index = index
 
     def compose(self):
         yield Horizontal(
             Label(
-                f"{self.index}. {self.title} - {self.artist} - {self.album}",
+                f"{self.title} - {self.artist} - {self.album}",
                 classes="row-label",
             )
         )

@@ -394,7 +394,6 @@ class TaskInfoScreen(ModalScreen):
             Label(f"artist   - {self.widget.artist}"),
             Label(f"album    - {self.widget.album}"),
             Label(f"progress - {self.widget.progress}"),
-            Label(f"index    - {self.widget.index}"),
             Button("Close", "warning"),
         )
         yield Button("", id="focus_sink", classes="focus-sink")  # focus sink
