@@ -41,7 +41,6 @@ class HomeScreen(Screen):
         yield Button("", id="focus_sink", classes="focus-sink")  # focus sink
 
     def _on_screen_resume(self):
-        print("home screen resumed")
         self.screen.query_one("#focus_sink").focus()
         return super()._on_screen_resume()
 
@@ -69,7 +68,6 @@ class DownloadScreen(Screen):
         return super()._on_screen_resume()
 
     def compose(self):
-        print("compose download screen")
         yield LoginHeader()
         yield Vertical(
             Container(

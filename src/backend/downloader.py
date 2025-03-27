@@ -111,10 +111,8 @@ class Downloader:
                 image = self.download_image(track)
 
                 # tag file
-                print(file_path)
                 tag_mp3_file(track, file_path, image)
 
-                print(f"download finish: {track.title}")
             except DownloadException:
                 self.task_controller.fail_task(task.id)
                 print("token expired")
@@ -137,8 +135,6 @@ class Downloader:
 
                 if request.headers["Content-length"] == 0:
                     raise
-
-                print(f"hej {content_length}")
 
                 with open(path, "wb") as outputStream:
                     downloaded = 1  # stops at 99% if 0

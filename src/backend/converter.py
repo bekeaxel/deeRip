@@ -25,7 +25,7 @@ from src.backend.types import *
 # https://open.spotify.com/playlist/5aKAA4aRjYqqhUfc2kypKH?si=e3d7ad4d57d84655&pt=7f8ec04af71e9b691f8fd87f29e20d3f
 # https://open.spotify.com/playlist/32MEUCjETK4UurVG7m9fQf?si=03bdaf5fd6e3463e
 
-DEBUG = True
+DEBUG = False
 
 redirect_url = "http://localhost:8888/callback/"
 auth_url = "https://accounts.spotify.com/api/token"
@@ -45,7 +45,6 @@ class Converter:
         )
 
     def restart_executor(self):
-        print("converter cancelled")
         self.thread_executor.shutdown(wait=False, cancel_futures=True)
         self.thread_executor = ThreadPoolExecutor(
             int(self.config.load_config()["concurrency_workers"])
@@ -136,17 +135,12 @@ class Converter:
             track_data, task_id
         )  # <- denna returnerar None när vanlig Exception fångas. Kolla varför den kastas.
 
-        print(type(track))
         if isinstance(track, Track):
             _, task = self.task_controller.create_download_task(track)
         else:
             _, task = self.task_controller.create_download_task(
                 error_obj=track, error=True
             )
-
-        print(
-            f"id: {track.id}, title: {track.title}, artist: {track.artist}, album: {track.album}"
-        )
 
         return Single(task_id, track.id, track.title, track.artist, track.album, task)
 
@@ -221,11 +215,6 @@ class Converter:
 
         tasks = []
 
-        concurrency_workers = self.config.load_config()["concurrency_workers"]
-
-        print(type(concurrency_workers))
-        print(concurrency_workers)
-
         try:
             for track in self.thread_executor.map(
                 partial(
@@ -236,7 +225,6 @@ class Converter:
                 download_obj.conversion_data,
             ):
                 if not self.task_controller.task_is_cancelled(task_id):
-                    print(track.title)
                     if isinstance(track, Track):
                         _, task = self.task_controller.create_download_task(track=track)
                     else:
@@ -251,7 +239,6 @@ class Converter:
 
             return download_obj
         except CancelledError as e:
-            print(e)
             raise ConversionCancelledException()
 
     def _safe_convert_track(self, track_data: dict, task_id: UUID, size: int = 1):
@@ -259,8 +246,6 @@ class Converter:
         try:
             return Track.parse_track(self._convert_track(track_data, task_id, size))
         except TrackNotFoundOnDeezerException as e:
-            print(e)
-            print(f"Track not found {track_data}")
             return ConversionError(
                 track_data["id"],
                 track_data["name"],
@@ -268,8 +253,6 @@ class Converter:
                 track_data["album"]["name"],
             )
         except CancelledError as e:
-            print(e)
-            print("Conversion cancelled")
             raise ConversionCancelledException()
 
     def _convert_track(self, track_data: dict, task_id: UUID, size: int = 1) -> dict:

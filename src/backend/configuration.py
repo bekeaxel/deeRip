@@ -45,8 +45,6 @@ class Config:
 
     def update_env_variables(self, key: str, value: str):
         # update value in env file
-        print(f"before {os.getenv("DEEZER_ARL")}")
         dotenv.set_key(self._env_path(), key, value)
         # reload all variables in memory
         os.environ[key] = value
-        print(f"after {os.getenv("DEEZER_ARL")}")

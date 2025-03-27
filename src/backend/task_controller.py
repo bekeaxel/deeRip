@@ -18,11 +18,8 @@ class TaskController:
         self, track=None, error_obj=None, error=False
     ) -> tuple[UUID, Task]:
         with self._lock:
-            print(f"before creating download task {self._tasks}")
             task = DownloadTask(track=track, error_obj=error_obj, error=error)
             self._tasks[task.id] = task
-            print(f"Download task created id={task.id}")
-            print(f"all tasks {self._tasks}")
             return task.id, task
 
     def create_conversion_task(self, link) -> UUID:
@@ -82,7 +79,6 @@ class TaskController:
                         {"task_id": str(task.id), "progress": task.get_progress()}
                     )
                 elif isinstance(task, DownloadTask):
-                    print(f"task progress {task.progress} - {task.track.title}")
                     tasks.append(
                         {
                             "task_id": str(task.id),
@@ -104,6 +100,5 @@ class TaskController:
                         }
                     )
 
-        print(f"getting all tasks {tasks}")
         tasks.reverse()
         return tasks

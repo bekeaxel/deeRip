@@ -1,6 +1,8 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
+import shutil
+from pathlib import Path
 
 from deezer import Deezer
 
@@ -24,20 +26,36 @@ class Controller:
     """Controller class"""
 
     def __init__(self):
-        self.config: Config = Config()
-        self.config.load_env_variables()
+
         self.dispatcher: MessageDispatcher = MessageDispatcher()
         self.task_controller: TaskController = TaskController(self.dispatcher)
         self.dz: Deezer = Deezer()
-        self.converter: Converter = Converter(
-            self.dz, self.config, self.task_controller
-        )
+
         self.deezer_utils: DeezerUtils = DeezerUtils(
             self.dz, self.task_controller, self.dispatcher
         )
         self.job_runner: JobRunner = JobRunner()
         self.deezer_connected = False
         self.spotify_connected = False
+
+    def start_up(self, app):
+        self.setup_config()
+        self.login()
+        self.subscribe(app)
+        # check if config fiel exists
+
+    def setup_config(self):
+        if not Path("config/config.yml").exists():
+            shutil.copy("config/config_default.yml", "config/config.yml")
+
+        if not Path("config/tokens.env").exists():
+            shutil.copy("config/tokens_default.env", "config/tokens.env")
+
+        self.config: Config = Config()
+        self.config.load_env_variables()
+        self.converter: Converter = Converter(
+            self.dz, self.config, self.task_controller
+        )
 
     def login(self):
         """Logins a client"""
@@ -57,7 +75,6 @@ class Controller:
     def can_stream_with_bit_rate(self, bit_rate: str) -> bool:
         match bit_rate:
             case "MP3_320":
-                print(f"can stream hq {self.dz.current_user.get("can_stream_hq")}")
                 return self.dz.current_user.get("can_stream_hq")
             case _:
                 return True
@@ -66,7 +83,6 @@ class Controller:
         """Creates a job and puts in the queue of the job runner. Returns task_id"""
         # måste skapa task innan den läggs i jobbkön för att kunna visa den i frontend
         if self.valid_url(query):
-            print("valid")
             task_id = self.task_controller.create_conversion_task(query)
             self.job_runner.push(
                 SpotifyJob(
@@ -79,7 +95,6 @@ class Controller:
                 )
             )
         else:
-            print(f"creating job for {query}")
             # here, query is id of song on deezer
             download_obj = self.deezer_utils.create_download_obj(query)
             self.job_runner.push(
@@ -106,6 +121,5 @@ class Controller:
         self.task_controller.cancel_task(task_id)
 
     def remove_all_tasks(self) -> None:
-        print("clearing queue")
         self.converter.restart_executor()
         self.task_controller.cancel_all()

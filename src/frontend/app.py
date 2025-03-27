@@ -28,8 +28,7 @@ class DeeRipApp(App):
         super().__init__()
         self.controller: Controller = Controller()
         self.config: Config = Config()
-        self.controller.subscribe(self)
-        self.controller.login()
+        self.controller.start_up(self)
 
     def on_mount(self):
         self.push_screen("home")

@@ -42,7 +42,6 @@ class SpotifyJob(IJob):
         super().__init__()
 
     def run(self):
-        print("job started")
         if self.task_controller.task_is_cancelled(self.task_id):
             return
         # start conversion task
@@ -54,8 +53,6 @@ class SpotifyJob(IJob):
                 self.task_controller.get_task(self.task_id).link, self.task_id
             )
             self.task_controller.finish_task(self.task_id)
-
-            print(f"conversion task {self.task_id} finished")
 
             # converting to DTO
             download_tasks = []
@@ -111,10 +108,6 @@ class SpotifyJob(IJob):
             TrackNotFoundOnDeezerException,
             Exception,
         ) as e:
-            print(e)
-            print(type(e))
-            print("krash i controller")
-            print(e.message)
             self.cancelled = True
 
         if not self.cancelled:
@@ -147,7 +140,6 @@ class SearchDownloadJob(IJob):
         super().__init__()
 
     def run(self):
-        print("search job started")
         Downloader(
             self.dz,
             self.download_obj,

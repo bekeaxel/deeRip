@@ -13,11 +13,8 @@ class JobRunner:
 
     def work(self):
         while True:
-            print("waiting for new job")
             job: IJob = self.queue.get()  # blocking
-            print(f"worker took job #{job.id}")
             job.run()
-            print(f"job #{job.id} completed")
             self.queue.task_done()  # tells the queue that next item can be processed
 
     def push(self, job: IJob):

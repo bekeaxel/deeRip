@@ -47,8 +47,6 @@ class TaskViewer(Static):
 
     def compose(self):
         tasks = self.controller.get_tasks()
-        print("composing taskviewer")
-        print(f"got tasks: {tasks}")
         components = [
             (
                 ProgressWidget(
@@ -89,7 +87,6 @@ class TaskViewer(Static):
                     )
                 )
             else:
-                print(f"in widget: {song}")
                 download_widgets.append(
                     ErrorWidget(
                         task_id=f"task_{song['task_id']}",
