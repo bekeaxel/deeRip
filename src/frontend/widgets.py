@@ -250,9 +250,7 @@ class SearchResult(Static):
                 + self.duration.rjust(self.widths[3]),
                 classes="result-label",
             ),
-            Button(
-                "⬇", id=f"d_{self.id}", classes="download-btn", tooltip="I WANT THIS!"
-            ),
+            Button("⬇", id=f"d_{self.id}", classes="download-btn", tooltip="gieeet"),
             classes="result-row",
         )
 
