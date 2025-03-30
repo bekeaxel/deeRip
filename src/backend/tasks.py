@@ -24,7 +24,7 @@ class Task:
         self.lock = threading.Lock()
         self.is_cancelled = False
 
-    def update_progress(self, progress):
+    def increment_progress(self, progress):
         """Increment progress of task by progress"""
         with self.lock:
             self.progress += progress

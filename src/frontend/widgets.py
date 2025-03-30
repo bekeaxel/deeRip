@@ -264,32 +264,33 @@ class SearchResultView(Static):
 
     @work(thread=True)
     def add_results(self, results):
-        self.app.call_from_thread(self.query_one(VerticalScroll).remove_children)
-        self.results = results
-        widths = self.get_widths(results)
-        self.app.call_from_thread(
-            self.mount,
-            Label(
-                "         Title".ljust(widths[0])
-                + "         Artist".ljust(widths[1])
-                + "         Album".ljust(widths[2])
-                + "         Duration".rjust(widths[3]),
-                classes="column-label",
-            ),
-        )
-        # yield column headers
-        for result in results:
+        if results:
+            self.app.call_from_thread(self.query_one(VerticalScroll).remove_children)
+            self.results = results
+            widths = self.get_widths(results)
             self.app.call_from_thread(
-                self.query_one(VerticalScroll).mount,
-                SearchResult(
-                    f"result_{result["id"]}",
-                    result["title"],
-                    result["artist"],
-                    result["album"],
-                    self.to_display_time(result["duration"]),
-                    widths=widths,
+                self.mount,
+                Label(
+                    "         Title".ljust(widths[0])
+                    + "         Artist".ljust(widths[1])
+                    + "         Album".ljust(widths[2])
+                    + "         Duration".rjust(widths[3]),
+                    classes="column-label",
                 ),
             )
+            # yield column headers
+            for result in results:
+                self.app.call_from_thread(
+                    self.query_one(VerticalScroll).mount,
+                    SearchResult(
+                        f"result_{result["id"]}",
+                        result["title"],
+                        result["artist"],
+                        result["album"],
+                        self.to_display_time(result["duration"]),
+                        widths=widths,
+                    ),
+                )
 
     def get_widths(self, results):
         def width(key, max_chars):

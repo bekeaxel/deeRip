@@ -43,6 +43,13 @@ class TaskController:
         for task_id in self._tasks.keys():
             self.cancel_task(task_id)
 
+    def increment_task_progress(self, task_id: UUID, progress: float) -> None:
+        if task := self._tasks.get(task_id):
+            task_progress = task.increment_progress(progress)
+            self._dispatcher.publish_update_progress_message(
+                task_id=task_id, progress=task_progress
+            )
+
     def update_task_progress(self, task_id: UUID, progress: float) -> None:
         if task := self._tasks.get(task_id):
             task.set_progress(progress)

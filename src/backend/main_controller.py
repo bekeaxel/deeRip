@@ -40,8 +40,8 @@ class Controller:
 
     def start_up(self, app):
         self.setup_config()
-        self.login()
         self.subscribe(app)
+        self.login()
         # check if config fiel exists
 
     def setup_config(self):

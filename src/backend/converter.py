@@ -27,8 +27,7 @@ from src.backend.types import *
 
 DEBUG = False
 
-redirect_url = "http://localhost:8888/callback/"
-auth_url = "https://accounts.spotify.com/api/token"
+REDIRECT_URL = "http://localhost:8888/callback/"
 
 # https://open.spotify.com/track/2UVSP6BlF8AgQOpzfDUVL2?si=53291ac0778a4ab8
 
@@ -65,13 +64,11 @@ class Converter:
                 auth_manager=SpotifyOAuth(
                     client_id=client_id,
                     client_secret=client_secret,
-                    redirect_uri=redirect_url,
+                    redirect_uri=REDIRECT_URL,
                     scope="playlist-read-private",
                     cache_handler=cache_handler,
                 )
             )
-
-            user = self.sp.current_user()
             self.logged_in = True
             return True
         except:
@@ -104,6 +101,8 @@ class Converter:
                 if (match := re.search(r"\/album\/([^?]+)", url))
                 else None
             )
+
+    # https://open.spotify.com/playlist/7dFm602GaWyjuyLoFvguH8?si=cd79ba23f7cf404c
 
     def generate_download_obj(self, link: str, task_id: UUID) -> IDownloadObject:
         """generates a download object from a link (track, playlist, album)"""
@@ -254,6 +253,9 @@ class Converter:
             )
         except CancelledError as e:
             raise ConversionCancelledException()
+        except Exception as e:
+            print(e)
+            print("borde inte va här")
 
     def _convert_track(self, track_data: dict, task_id: UUID, size: int = 1) -> dict:
         """Convert a track using ISRC or fallback to track metadata search."""
@@ -268,9 +270,6 @@ class Converter:
 
         print(track_data["name"])
 
-        # Get the Spotify ID for caching purposes (currently not used)
-        spotify_id = track_data["id"]
-
         try:
             # Try to find track by ISRC code first
             isrc = track_data["external_ids"]["isrc"]
@@ -279,7 +278,7 @@ class Converter:
 
             if dz_track:
                 # Update progress and return the found track
-                self.task_controller.update_task_progress(task_id, (1 / size) * 100)
+                self.task_controller.increment_task_progress(task_id, (1 / size) * 100)
                 return dz_track
         except KeyError as e:
             print(f"Missing ISRC in track data: {e}")
@@ -302,15 +301,15 @@ class Converter:
                 raise TrackNotFoundOnDeezerException()
 
             dz_track = self.dz.api.get_track(dz_track_id)
-            self.task_controller.update_task_progress(task_id, (1 / size) * 100)
+            self.task_controller.increment_task_progress(task_id, (1 / size) * 100)
             return dz_track
 
         except TrackNotFoundOnDeezerException:
             print("Track not found on Deezer.")
-            self.task_controller.update_task_progress(task_id, (1 / size) * 100)
+            self.task_controller.increment_task_progress(task_id, (1 / size) * 100)
             raise  # Reraise the exception after logging
 
         except Exception as e:
             print(f"Unexpected error during track conversion: {e}")
-            self.task_controller.update_task_progress(task_id, (1 / size) * 100)
+            self.task_controller.increment_task_progress(task_id, (1 / size) * 100)
             raise TrackNotFoundOnDeezerException()  # Ensure a proper exception is raised if all else fails
