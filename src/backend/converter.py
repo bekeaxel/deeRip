@@ -135,10 +135,12 @@ class Converter:
         )  # <- denna returnerar None när vanlig Exception fångas. Kolla varför den kastas.
 
         if isinstance(track, Track):
-            _, task = self.task_controller.create_download_task(track)
+            _, task = self.task_controller.create_download_task(
+                track, conversion_task_id=task_id
+            )
         else:
             _, task = self.task_controller.create_download_task(
-                error_obj=track, error=True
+                error_obj=track, error=True, conversion_task_id=task_id
             )
 
         return Single(task_id, track.id, track.title, track.artist, track.album, task)
@@ -225,10 +227,12 @@ class Converter:
             ):
                 if not self.task_controller.task_is_cancelled(task_id):
                     if isinstance(track, Track):
-                        _, task = self.task_controller.create_download_task(track=track)
+                        _, task = self.task_controller.create_download_task(
+                            track=track, conversion_task_id=task_id
+                        )
                     else:
                         _, task = self.task_controller.create_download_task(
-                            error_obj=track, error=True
+                            error_obj=track, error=True, conversion_task_id=task_id
                         )
 
                     tasks.append(task)

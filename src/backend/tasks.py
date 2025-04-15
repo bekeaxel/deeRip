@@ -1,5 +1,5 @@
 from enum import Enum
-from uuid import uuid4
+from uuid import uuid4, UUID
 import threading
 
 from src.backend.models import *
@@ -14,13 +14,15 @@ class State(Enum):
     COMPLETE = 3
     CANCELLED = 4
     FAILED = 5
+    CREATED = 6
 
 
 class Task:
-    def __init__(self, progress=0, state: State = State.PENDING):
+    def __init__(self, index, progress=0, state: State = State.CREATED):
+        self.index = index
         self.progress = progress
         self.state = state
-        self.id = uuid4()
+        self.id: UUID = uuid4()
         self.lock = threading.Lock()
         self.is_cancelled = False
 
@@ -49,6 +51,10 @@ class Task:
 
     def start_task(self):
         with self.lock:
+            self.state = State.RUNNING
+
+    def queue_task(self):
+        with self.lock:
             self.state = State.PENDING
 
     def fail_task(self):
@@ -63,20 +69,35 @@ class Task:
 class DownloadTask(Task):
     def __init__(
         self,
+        index,
         track: Track = None,
         error_obj: ConversionError = None,
         error=False,
         progress=0,
-        state: State = State.PENDING,
+        state: State = State.CREATED,
+        conversion_task_id: UUID = None,
     ):
         self.track: Track = track
         self.error_obj = error_obj
         self.error = error
-        super().__init__(progress, state)
+        self.conversion_task_id = conversion_task_id
+        super().__init__(index, progress, state)
+
+    def __str__(self):
+        return (
+            f"d_task - task_id={self.id}, progress={self.progress}, state={self.state}, track={self.track}"
+            if self.state != State.FAILED
+            else f"d_task - task_id={self.id}, progress={self.progress}, state={self.state}, track={self.error_obj}"
+        )
 
 
 class ConversionTask(Task):
-    def __init__(self, link, progress=0, state: State = State.PENDING):
+    def __init__(self, link, index, progress=0, state: State = State.CREATED):
         self.link = link
         self.name = ""
-        super().__init__(progress, state)
+        super().__init__(index, progress, state)
+
+    def __str__(self):
+        return (
+            f"c_task - task_id={self.id}, progress={self.progress}, state={self.state}"
+        )

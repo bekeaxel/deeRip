@@ -104,11 +104,6 @@ class SearchScreen(Screen):
         self.controller.subscribe(self)
         super().__init__()
 
-    # def _on_screen_resume(self):
-    #     self.screen.query_one("#focus_sink").focus()
-    #     self.query_one(Container).query_one(SearchBar).set_value(self.app.query)
-    #     return super()._on_screen_resume()
-
     def compose(self):
         yield LoginHeader()
         yield Vertical(

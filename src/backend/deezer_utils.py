@@ -29,5 +29,6 @@ class DeezerUtils:
         dz_track = self.dz.api.get_track(id)
         track = Track.parse_track(dz_track)
         _, task = self.task_controller.create_download_task(track=track)
+        task.queue_task()
 
         return Single(None, track.id, track.title, track.artist, track.album, task)

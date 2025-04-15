@@ -9,22 +9,34 @@ from src.frontend.messages import *
 class TaskController:
     """Central unit for controlling all tasks. Sends updates to all watchers"""
 
+    INDEX = 0
+
     def __init__(self, dispatcher: MessageDispatcher):
         self._tasks: dict[str, Task] = {}
         self._lock = threading.Lock()
         self._dispatcher: MessageDispatcher = dispatcher
 
     def create_download_task(
-        self, track=None, error_obj=None, error=False
+        self, track=None, error_obj=None, error=False, conversion_task_id=None
     ) -> tuple[UUID, Task]:
         with self._lock:
-            task = DownloadTask(track=track, error_obj=error_obj, error=error)
+            task = DownloadTask(
+                index=self.INDEX,
+                track=track,
+                error_obj=error_obj,
+                error=error,
+                conversion_task_id=conversion_task_id,
+            )
+            self.INDEX += 1
+            if error:
+                task.fail_task()
             self._tasks[task.id] = task
             return task.id, task
 
     def create_conversion_task(self, link) -> UUID:
         with self._lock:
-            task = ConversionTask(link)
+            task = ConversionTask(link=link, index=self.INDEX)
+            self.INDEX += 1
             self._tasks[task.id] = task
             self._dispatcher.publish_conversion_task_created_message(task.id)
             return task.id
@@ -60,6 +72,7 @@ class TaskController:
     def finish_task(self, task_id) -> None:
         if task := self._tasks.get(task_id):
             if isinstance(task, ConversionTask):
+                self.queue_downloads_for_conversion_task(task_id)
                 self._tasks.pop(task_id)
             else:
                 task.finish_task()
@@ -80,7 +93,8 @@ class TaskController:
     def get_all_tasks(self) -> list[dict]:
         tasks = []
         for task in self._tasks.values():
-            if not task.state == State.CANCELLED:
+            print(task)
+            if not task.state in [State.CANCELLED, State.CREATED]:
                 if isinstance(task, ConversionTask):
                     tasks.append(
                         {"task_id": str(task.id), "progress": task.get_progress()}
@@ -95,8 +109,9 @@ class TaskController:
                             "album": task.track.album.title,
                             "error": task.error,
                             "progress": task.progress,
+                            "index": task.index,
                         }
-                        if not task.error
+                        if not task.state == State.FAILED
                         else {
                             "task_id": str(task.id),
                             "song_id": task.error_obj.id,
@@ -104,8 +119,19 @@ class TaskController:
                             "artist": task.error_obj.artist,
                             "album": task.error_obj.album,
                             "error": task.error,
+                            "index": task.index,
                         }
                     )
 
-        tasks.reverse()
+        tasks.sort(key=lambda x: x.get("index"), reverse=True)
         return tasks
+
+    def queue_downloads_for_conversion_task(self, task_id):
+        for task in self._tasks.values():
+            if isinstance(task, DownloadTask):
+                if (
+                    task.conversion_task_id == task_id
+                    and not task.state == State.FAILED
+                ):
+                    print(f"queueing task{task}")
+                    task.queue_task()

@@ -42,36 +42,45 @@ class TaskViewer(Static):
     def __init__(self):
         self.controller: Controller = self.app.controller
         self.controller.subscribe(self)
-        self.conversion_in_progress = False
         super().__init__()
 
     def compose(self):
-        tasks = self.controller.get_tasks()
-        components = [
-            (
-                ProgressWidget(
-                    task_id=f"task_{task['task_id']}",
-                    song_id=task["song_id"],
-                    title=task["title"],
-                    artist=task["artist"],
-                    album=task["album"],
-                    progress=task["progress"],
+        tasks: list[dict] = self.controller.get_tasks()
+        components = []
+        for task in tasks:
+            if task.get("error", False):
+                widget = ErrorWidget(
+                    task_id=f"task_{task.get("task_id", "?")}",
+                    song_id=task.get("song_id", "?"),
+                    title=task.get("title", "?"),
+                    artist=task.get("artist", "?"),
+                    album=task.get("album", "?"),
                 )
-                if "song_id" in task
-                else ProgressWidget(
-                    task_id=f"task_{task['task_id']}",
-                    progress=task["progress"],
+                components.append(widget)
+            elif task.get("song_id", ""):
+                widget = ProgressWidget(
+                    task_id=f"task_{task.get('task_id', "?")}",
+                    song_id=task.get("song_id", "?"),
+                    title=task.get("title", "?"),
+                    artist=task.get("artist", "?"),
+                    album=task.get("album", "?"),
+                    progress=task.get("progress", 0),
+                )
+                components.append(widget)
+            else:
+                widget = ProgressWidget(
+                    task_id=f"task_{task.get('task_id', "?")}",
+                    progress=task.get("progress", 0),
                     conversion=True,
                 )
-            )
-            for task in tasks
-        ]
+                components.append(widget)
+
         yield ListView(*components)
 
     # ---- Workers ----
 
     @work(thread=True)
-    def create_download_tasks(self, task_id: str, songs):
+    def create_download_tasks(self, task_id: str, songs: list[dict]):
         list_view = self.query_one(ListView)
 
         download_widgets = []
@@ -79,21 +88,22 @@ class TaskViewer(Static):
             if not song.get("error"):
                 download_widgets.append(
                     ProgressWidget(
-                        task_id=f"task_{song['task_id']}",
-                        song_id=song["song_id"],
-                        title=song["title"],
-                        artist=song["artist"],
-                        album=song["album"],
+                        task_id=f"task_{song.get('task_id', "?")}",
+                        song_id=song.get("song_id", "?"),
+                        title=song.get("title", "?"),
+                        artist=song.get("artist", "?"),
+                        album=song.get("album", "?"),
+                        progress=song.get("progress", 0),
                     )
                 )
             else:
                 download_widgets.append(
                     ErrorWidget(
-                        task_id=f"task_{song['task_id']}",
-                        song_id=song["song_id"],
-                        title=song["title"],
-                        artist=song["artist"],
-                        album=song["album"],
+                        task_id=f"task_{song.get("task_id", "?")}",
+                        song_id=song.get("song_id", "?"),
+                        title=song.get("title", "?"),
+                        artist=song.get("artist", "?"),
+                        album=song.get("album", "?"),
                     )
                 )
 
@@ -157,12 +167,12 @@ class ProgressWidget(ListItem):
         conversion=False,
     ):
         super().__init__(id=task_id)
-        self.song_id = song_id
-        self.title = title
-        self.artist = artist
-        self.album = album
-        self.progress = progress
-        self.conversion = conversion
+        self.song_id: str = song_id
+        self.title: str = title
+        self.artist: str = artist
+        self.album: str = album
+        self.progress: int = progress
+        self.conversion: bool = conversion
 
     def compose(self):
         components = [
@@ -197,10 +207,10 @@ class ErrorWidget(ListItem):
 
     def __init__(self, task_id, song_id, title, artist, album):
         super().__init__(id=task_id)
-        self.song_id = song_id
-        self.title = title
-        self.artist = artist
-        self.album = album
+        self.song_id: str = song_id
+        self.title: str = title
+        self.artist: str = artist
+        self.album: str = album
 
     def compose(self):
         yield Horizontal(

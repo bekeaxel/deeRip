@@ -67,6 +67,7 @@ class SpotifyJob(IJob):
                         "artist": download_obj.artist,
                         "album": download_obj.album,
                         "error": download_obj.task.error,
+                        "index": download_obj.task.index,
                     }
                 )
 
@@ -81,6 +82,7 @@ class SpotifyJob(IJob):
                             "artist": task.track.artist.name,
                             "album": task.track.album.title,
                             "error": task.error,
+                            "index": task.index,
                         }
                         if not task.error
                         else {
@@ -90,8 +92,10 @@ class SpotifyJob(IJob):
                             "artist": task.error_obj.artist,
                             "album": task.error_obj.album,
                             "error": task.error,
+                            "index": task.index,
                         }
                     )
+                download_tasks.sort(key=lambda x: x.get("index"), reverse=True)
 
             # tell frontend to create download tasks
             self.dispatcher.publish_conversion_complete_message(

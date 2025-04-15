@@ -31,6 +31,9 @@ class ConversionError:
         self.artist = artist
         self.album = album
 
+    def __str__(self):
+        return f"title={self.title},\nartist={self.artist},\nalbum={self.album}"
+
 
 class ConversionCancelledException(Exception):
     def __init__(self, message="Conversion cancelled"):

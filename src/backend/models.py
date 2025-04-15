@@ -16,6 +16,9 @@ class Album:
         self.release_date = ""
         self.tracklist = ""
 
+    def __str__(self):
+        return self.title
+
     @classmethod
     def parse_album(cls, album_data):
         album = Album(album_data["id"], album_data["title"])
@@ -45,6 +48,9 @@ class Artist:
         self.picture_xl = ""
         self.radio = False
         self.tracklist = ""
+
+    def __str__(self):
+        return self.name
 
     @classmethod
     def parse_artist(cls, artist_data):
@@ -81,6 +87,9 @@ class Track:
         self.track_token = ""
         self.artist: Artist = None
         self.album: Album = None
+
+    def __str__(self):
+        return f"\ntitle={self.title},\nartist={str(self.artist)},\nalbum={str(self.album)}"
 
     @classmethod
     def parse_track(cls, track_data: dict):
