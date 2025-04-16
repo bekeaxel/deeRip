@@ -6,7 +6,6 @@
 }
 
 .home-container {
-    padding: 20;
     align: center middle;
 }
 
