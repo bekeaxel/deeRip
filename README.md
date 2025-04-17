@@ -1,6 +1,6 @@
 # deeRip
 
-Deerip is a converter/downloader for Spotify and Deezer. It was built using python and Textual (shoutout) and runs straight in your terminal! Run the commands below to get started. 
+deeRip is a personal music exporter for Spotify and Deezer, built with Python and Textual (shoutout!). It runs entirely in your terminal. Run the commands below to get started.
 
 
 ## System Requirements
@@ -17,23 +17,27 @@ pip install -r requirements.txt
 textual run run.py
 ```
 ## Credentials
-deeRip uses Spotify and Deezer api meaning that you need to supply your own api keys. 
+deeRip requires access tokens for Spotify and Deezer to interact with their APIs. You must supply your own credentials.
 
 ### Spotify
-For Spotify this is done by creating an app via https://developer.spotify.com/dashboard. 
-Make sure to enter http://localhost:8888/callback/ under **Redirect URIs** and to select **Web API** under **Which API/SDKs are you planning to use?**
+Create a developer app at Spotify Developer Dashboard.
+- Add http://localhost:8888/callback/ under Redirect URIs
+- Select Web API under API/SDKs
 
-After creating the app you can find the public and private keys which you will need to enter in the deeRip settings tab.
+Once created, you’ll find your client ID and secret—enter them in deeRip’s settings tab.
 
 ### Deezer
-Deezer uses an ARL which you can find by logging in to deezer website. 
-- Open developer tools by right-clicking and pressing inspect
-- Go to Application
-- Under Cookies/https://www.deezer.com look for arl
-
-Now you are all set! Happy listening!
-
+deeRip uses your personal Deezer session to access your library and metadata.
+- Log in at deezer.com
+- Open developer tools (Right-click → Inspect)
+- Go to the Application tab
+- Under Cookies for https://www.deezer.com, find the arl token
 
 
-Huge thanks to deemix for all the inspiration.
+⚠️ This tool is intended for personal use only.
+It does not bypass DRM or access paid content without authorization.
+Please respect the terms of service of each platform.
+
+
+Special thanks to open-source projects in the music ecosystem for their inspiration.
 
