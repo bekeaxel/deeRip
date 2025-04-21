@@ -191,6 +191,7 @@ class SettingsScreen(Screen):
                     value=self.bit_rate_config_2_select(),
                     allow_blank=False,
                     id="bit_rate",
+                    tooltip="bit rate for downloading from Deezer",
                 ),
                 classes="row",
             ),
@@ -218,7 +219,7 @@ class SettingsScreen(Screen):
                 Label("Spotify client token", classes="setting-descriptor"),
                 Input(
                     placeholder="Spotify client token",
-                    value=os.getenv("SPOTIFY_CLIENT_TOKEN"),
+                    value=self.config.get_env_variable("SPOTIFY_CLIENT_TOKEN"),
                     validators=[Length(minimum=32, maximum=32)],
                     id="spotify_client",
                     tooltip="Insert client token here and secret token in the one below. See readme on github for more info on how to setup spotify.",
@@ -229,7 +230,7 @@ class SettingsScreen(Screen):
                 Label("Spotify secret token", classes="setting-descriptor"),
                 Input(
                     placeholder="Spotify secret token",
-                    value=os.getenv("SPOTIFY_SECRET_TOKEN"),
+                    value=self.config.get_env_variable("SPOTIFY_SECRET_TOKEN"),
                     password=True,
                     validators=[Length(minimum=32, maximum=32)],
                     id="spotify_secret",
@@ -248,7 +249,7 @@ class SettingsScreen(Screen):
                 Label("Deezer ARL", classes="setting-descriptor"),
                 Input(
                     placeholder="Deezer arl",
-                    value=os.getenv("DEEZER_ARL"),
+                    value=self.config.get_env_variable("DEEZER_ARL"),
                     password=True,
                     validators=[Length(minimum=192, maximum=192)],
                     id="arl",
@@ -335,8 +336,8 @@ class SettingsScreen(Screen):
             client.validate(client.value).is_valid
             and secret.validate(secret.value).is_valid
         ):
-            self.config.update_env_variables("SPOTIFY_CLIENT_TOKEN", client.value)
-            self.config.update_env_variables("SPOTIFY_SECRET_TOKEN", secret.value)
+            self.config.update_env_variable("SPOTIFY_CLIENT_TOKEN", client.value)
+            self.config.update_env_variable("SPOTIFY_SECRET_TOKEN", secret.value)
             self.controller.login()
         self.app.call_from_thread(self.app.pop_screen)
 
@@ -345,7 +346,7 @@ class SettingsScreen(Screen):
         arl = self.query_one("#arl", Input)
 
         if arl.validate(arl.value).is_valid:
-            self.config.update_env_variables("DEEZER_ARL", arl.value)
+            self.config.update_env_variable("DEEZER_ARL", arl.value)
             self.controller.login()
 
         self.app.call_from_thread(self.app.pop_screen)

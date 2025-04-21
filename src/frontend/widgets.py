@@ -178,11 +178,11 @@ class ProgressWidget(ListItem):
         components = [
             (
                 Label(
-                    f" {self.title} - {self.artist} - {self.album}",
+                    self.format_label(self.title, self.artist, self.album),
                     classes="row-label",
                 )
                 if self.title
-                else Label(f"Converting songs...", classes="row-label")
+                else Label(f"Fixing shit in the backend...", classes="row-label")
             )
         ]
 
@@ -191,6 +191,15 @@ class ProgressWidget(ListItem):
         components.append(bar)
 
         yield Horizontal(*components)
+
+    def format_label(self, title, artist, album):
+        res = title
+        if artist:
+            res += f" - {artist}"
+        if album:
+            res += f" - {album}"
+
+        return res
 
     def update_progress(self, progress):
         self.progress = progress

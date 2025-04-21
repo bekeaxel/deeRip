@@ -17,7 +17,7 @@ from deemix.utils import crypto
 
 from src.backend.models import Track
 from src.backend.exceptions import *
-from src.backend.tagger import tag_mp3_file
+from src.backend.tagger import tag_file
 from src.backend.configuration import Config
 from src.backend.task_controller import TaskController
 from src.backend.message_dispatcher import MessageDispatcher
@@ -70,7 +70,7 @@ class Downloader:
         """Downloads a track to disk. This method can be run in parallell"""
 
         # downloads a given download object, playlist info is in self.download_obj
-        if task.error or self.task_controller.task_is_cancelled(task.id):
+        if task.error or self.task_controller.is_cancelled(task.id):
             return
 
         config = self.config.load_config()
@@ -78,17 +78,17 @@ class Downloader:
 
         if isinstance(self.__download_obj, Collection):
             playlist_name = self.__download_obj.title
-            download_path = f"{config["download_folder"]}/{playlist_name}"
+            download_folder = f"{config["download_folder"]}/{playlist_name}"
         else:
-            download_path = config["download_folder"]
+            download_folder = config["download_folder"]
 
         # return if we don't want to override downloads
-        if Path(download_path).exists() and not config["download_override"]:
+        if Path(download_folder).exists() and not config["download_override"]:
             self.task_controller.update_task_progress(task.id, 100)
             return
 
         # Create download location folder if it does not exist
-        Path(download_path).mkdir(parents=True, exist_ok=True)
+        Path(download_folder).mkdir(parents=True, exist_ok=True)
 
         # Get the download url for streaming
         download_url: str = self.get_download_url(track, config["bit_rate"])
@@ -97,7 +97,7 @@ class Downloader:
 
             # Creating full download path
             extension = self.get_extension()
-            file_path: str = f"{download_path}/{track.title}{extension}"
+            file_path: str = f"{download_folder}/{track.title}{extension}"
 
             # stream track to file
             try:
@@ -112,7 +112,7 @@ class Downloader:
                 image = self.download_image(track)
 
                 # tag file
-                tag_mp3_file(track, file_path, image)
+                tag_file(track, file_path, image)
 
             except DownloadException:
                 self.task_controller.fail_task(task.id)

@@ -8,7 +8,7 @@ class IDownloadObject:
 
 class Single(IDownloadObject):
     def __init__(self, conversion_id, song_id, title, artist, album, task: Task):
-        self.song_id = song_id
+        self.song_id = song_id  # spotify id or soundcloud id
         self.title = title
         self.artist = artist
         self.album = album

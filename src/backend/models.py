@@ -110,3 +110,53 @@ class Track:
         track.album = Album.parse_album(track_data["album"])
 
         return track
+
+
+class SoundCloudTrack:
+
+    def __init__(self):
+        self.title: str = ""
+        self.artist = ""
+        self.duration = 0
+        self.image_url = ""
+        self.transcodings = []
+        self.progressive_mp3_streaming_url = ""
+
+    def __str__(self):
+        return f"\ntitle={self.title},\nartist={str(self.artist)}"
+
+    @classmethod
+    def parse_track(cls, data: dict):
+        track: SoundCloudTrack = SoundCloudTrack()
+
+        track.title = data.get("title", "?").replace("/", "")
+        track.artist = data.get("user", {}).get("username", "?")
+        track.duration = data.get("duration", 0)
+        track.image_url = data.get("artwork_url", "?")
+        track.transcodings = data.get("media", {}).get("transcodings", [])
+
+        return track
+
+
+class SoundCloudPlaylist:
+
+    def __init__(self):
+        self.title = ""
+        self.tracks: list[SoundCloudTrack] = []
+
+    def __str__(self):
+        return f"\ntitle={self.title}, tracks={[str(track) for track in self.tracks]}"
+
+    @classmethod
+    def parse_playlist(cls, data: dict):
+        playlist: SoundCloudPlaylist = SoundCloudPlaylist()
+
+        print(f"data={data}")
+
+        playlist.title = data.get("title", "?")
+        playlist.tracks = [
+            SoundCloudTrack.parse_track(track_data)
+            for track_data in data.get("tracks", [])
+        ]
+
+        return playlist

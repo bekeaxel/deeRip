@@ -43,8 +43,11 @@ class Config:
         # load variables in as env variables on computer
         dotenv.load_dotenv(self._env_path())
 
-    def update_env_variables(self, key: str, value: str):
+    def update_env_variable(self, key: str, value: str):
         # update value in env file
         dotenv.set_key(self._env_path(), key, value)
         # reload all variables in memory
         os.environ[key] = value
+
+    def get_env_variable(self, key: str):
+        return os.getenv(key)

@@ -44,3 +44,9 @@ class ConversionCancelledException(Exception):
 class DownloadException(Exception):
     def __init__(self, *args):
         super().__init__(*args)
+
+
+class SoundCloudError(Exception):
+    def __init__(self, message="Soundcloud error"):
+        self.message = message
+        super().__init__(self.message)

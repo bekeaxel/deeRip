@@ -33,18 +33,18 @@ class TaskController:
             self._tasks[task.id] = task
             return task.id, task
 
-    def create_conversion_task(self, link) -> UUID:
+    def create_conversion_task(self, url) -> UUID:
         with self._lock:
-            task = ConversionTask(link=link, index=self.INDEX)
+            task = ConversionTask(url=url, index=self.INDEX)
             self.INDEX += 1
             self._tasks[task.id] = task
             self._dispatcher.publish_conversion_task_created_message(task.id)
             return task.id
 
-    def task_is_done(self, task_id) -> bool:
+    def is_done(self, task_id) -> bool:
         return (task := self._tasks.get(task_id)) and task.state == State.COMPLETE
 
-    def task_is_cancelled(self, task_id) -> bool:
+    def is_cancelled(self, task_id) -> bool:
         return (task := self._tasks.get(task_id)) and task.state == State.CANCELLED
 
     def cancel_task(self, task_id) -> None:
@@ -100,28 +100,52 @@ class TaskController:
                         {"task_id": str(task.id), "progress": task.get_progress()}
                     )
                 elif isinstance(task, DownloadTask):
-                    tasks.append(
-                        {
-                            "task_id": str(task.id),
-                            "song_id": task.track.id,
-                            "title": task.track.title,
-                            "artist": task.track.artist.name,
-                            "album": task.track.album.title,
-                            "error": task.error,
-                            "progress": task.progress,
-                            "index": task.index,
-                        }
-                        if not task.state == State.FAILED
-                        else {
-                            "task_id": str(task.id),
-                            "song_id": task.error_obj.id,
-                            "title": task.error_obj.title,
-                            "artist": task.error_obj.artist,
-                            "album": task.error_obj.album,
-                            "error": task.error,
-                            "index": task.index,
-                        }
-                    )
+                    if isinstance(task.track, SoundCloudTrack):
+                        tasks.append(
+                            {
+                                "task_id": str(task.id),
+                                "song_id": "sc",
+                                "title": task.track.title,
+                                "artist": task.track.artist,
+                                "album": "",
+                                "error": task.error,
+                                "progress": task.progress,
+                                "index": task.index,
+                            }
+                            if not task.state == State.FAILED
+                            else {
+                                "task_id": str(task.id),
+                                "song_id": task.error_obj.id,
+                                "title": task.error_obj.title,
+                                "artist": task.error_obj.artist,
+                                "album": task.error_obj.album,
+                                "error": task.error,
+                                "index": task.index,
+                            }
+                        )
+                    elif isinstance(task.track, Track):
+                        tasks.append(
+                            {
+                                "task_id": str(task.id),
+                                "song_id": task.track.id,
+                                "title": task.track.title,
+                                "artist": task.track.artist.name,
+                                "album": task.track.album.title,
+                                "error": task.error,
+                                "progress": task.progress,
+                                "index": task.index,
+                            }
+                            if not task.state == State.FAILED
+                            else {
+                                "task_id": str(task.id),
+                                "song_id": task.error_obj.id,
+                                "title": task.error_obj.title,
+                                "artist": task.error_obj.artist,
+                                "album": task.error_obj.album,
+                                "error": task.error,
+                                "index": task.index,
+                            }
+                        )
 
         tasks.sort(key=lambda x: x.get("index"), reverse=True)
         return tasks

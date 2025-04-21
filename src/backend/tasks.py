@@ -70,14 +70,14 @@ class DownloadTask(Task):
     def __init__(
         self,
         index,
-        track: Track = None,
+        track: Track | SoundCloudTrack = None,
         error_obj: ConversionError = None,
         error=False,
         progress=0,
         state: State = State.CREATED,
         conversion_task_id: UUID = None,
     ):
-        self.track: Track = track
+        self.track: Track | SoundCloudTrack = track
         self.error_obj = error_obj
         self.error = error
         self.conversion_task_id = conversion_task_id
@@ -92,8 +92,8 @@ class DownloadTask(Task):
 
 
 class ConversionTask(Task):
-    def __init__(self, link, index, progress=0, state: State = State.CREATED):
-        self.link = link
+    def __init__(self, url, index, progress=0, state: State = State.CREATED):
+        self.url = url
         self.name = ""
         super().__init__(index, progress, state)
 
