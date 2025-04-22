@@ -12,6 +12,7 @@ from src.backend.configuration import Config
 from src.backend.download_objects import *
 from src.backend.tasks import *
 from src.backend.tagger import tag_file
+from src.backend.types import *
 
 BASE_URL_SOUNDCLOUD = "https://soundcloud.com"
 BASE_URL_SOUNDCLOUD_TRACK = (
@@ -73,6 +74,7 @@ class SoundCloudClient:
             track.progressive_mp3_streaming_url = self.get_streaming_url_for_track(
                 track
             )
+            track.playlist_title = playlist.title
             _, download_task = self.task_controller.create_download_task(
                 track, conversion_task_id=task_id
             )
@@ -182,9 +184,11 @@ class SoundCloudClient:
         if task.is_cancelled:
             raise SoundCloudError("Download task cancelled")
 
-        self._download_track(task.track, task.id)
+        self._download_track(task.track, task.i, DownloadType.TRACK)
 
-    def _download_track(self, track: SoundCloudTrack, task_id: UUID):
+    def _download_track(
+        self, track: SoundCloudTrack, task_id: UUID, download_type: DownloadType
+    ):
         """Downloads a SoundCloudTrack"""
         if self.task_controller.is_cancelled((task_id)):
             # should not fail cancelled task, just stop downloading
@@ -198,6 +202,10 @@ class SoundCloudClient:
 
             # get path
             download_folder = config["download_folder"]
+
+            if download_type == DownloadType.PLAYLIST:
+                download_folder += f"/{track.playlist_title}"
+
             path = download_folder + "/" + track.title + MP3_EXTENSION
 
             # check if download is allowed
@@ -214,20 +222,26 @@ class SoundCloudClient:
             image = self.download_image(track.image_url)
             self.tag_file(track, path, image)
 
-        except:
+        except SoundCloudError as e:
             self.task_controller.fail_task(task_id)
 
     def download_playlist(self, download_obj: Collection):
         """Download a SoundCloudPlaylist"""
+        download_obj.tasks.reverse()
         for task in download_obj.tasks:
-            self.thread_executor.submit(self._download_track, task.track, task.id)
+            self.thread_executor.submit(
+                self._download_track, task.track, task.id, DownloadType.PLAYLIST
+            )
 
     def download_image(self, image_url):
         """Download image from url"""
         try:
-            response = self.session.get(image_url, headers=HEADERS, timeout=10)
-            response.raise_for_status()
-            return response.content
+            if image_url:
+                response = self.session.get(image_url, headers=HEADERS, timeout=10)
+                response.raise_for_status()
+                return response.content
+            with open("images/song_icon.png", "rb") as default_image:
+                return default_image.read()
         except Exception:
             raise SoundCloudError("Error while downloading image")
 

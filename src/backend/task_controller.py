@@ -101,6 +101,7 @@ class TaskController:
                     )
                 elif isinstance(task, DownloadTask):
                     if isinstance(task.track, SoundCloudTrack):
+                        # TODO: add error objects for soundcloud tracks.
                         tasks.append(
                             {
                                 "task_id": str(task.id),
@@ -112,40 +113,33 @@ class TaskController:
                                 "progress": task.progress,
                                 "index": task.index,
                             }
-                            if not task.state == State.FAILED
-                            else {
-                                "task_id": str(task.id),
-                                "song_id": task.error_obj.id,
-                                "title": task.error_obj.title,
-                                "artist": task.error_obj.artist,
-                                "album": task.error_obj.album,
-                                "error": task.error,
-                                "index": task.index,
-                            }
                         )
                     elif isinstance(task.track, Track):
-                        tasks.append(
-                            {
-                                "task_id": str(task.id),
-                                "song_id": task.track.id,
-                                "title": task.track.title,
-                                "artist": task.track.artist.name,
-                                "album": task.track.album.title,
-                                "error": task.error,
-                                "progress": task.progress,
-                                "index": task.index,
-                            }
-                            if not task.state == State.FAILED
-                            else {
-                                "task_id": str(task.id),
-                                "song_id": task.error_obj.id,
-                                "title": task.error_obj.title,
-                                "artist": task.error_obj.artist,
-                                "album": task.error_obj.album,
-                                "error": task.error,
-                                "index": task.index,
-                            }
-                        )
+                        if task.state == State.FAILED:
+                            tasks.append(
+                                {
+                                    "task_id": str(task.id),
+                                    "song_id": task.error_obj.id,
+                                    "title": task.error_obj.title,
+                                    "artist": task.error_obj.artist,
+                                    "album": task.error_obj.album,
+                                    "error": task.error,
+                                    "index": task.index,
+                                }
+                            )
+                        else:
+                            tasks.append(
+                                {
+                                    "task_id": str(task.id),
+                                    "song_id": task.track.id,
+                                    "title": task.track.title,
+                                    "artist": task.track.artist.name,
+                                    "album": task.track.album.title,
+                                    "error": task.error,
+                                    "progress": task.progress,
+                                    "index": task.index,
+                                }
+                            )
 
         tasks.sort(key=lambda x: x.get("index"), reverse=True)
         return tasks

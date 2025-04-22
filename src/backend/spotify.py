@@ -99,8 +99,6 @@ class SpotifyConverter:
                 else None
             )
 
-    # https://open.spotify.com/playlist/7dFm602GaWyjuyLoFvguH8?si=cd79ba23f7cf404c
-
     def generate_download_obj(self, link: str, task_id: UUID) -> IDownloadObject:
         """generates a download object from a link (track, playlist, album)"""
         if DEBUG:

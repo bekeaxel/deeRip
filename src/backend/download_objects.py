@@ -16,6 +16,9 @@ class Single(IDownloadObject):
         self.size = 1
         super().__init__(conversion_id)
 
+    def __str__(self):
+        return f"Single({self.song_id}, {self.title}, {self.artist}, {self.album})"
+
 
 class Collection(IDownloadObject):
     def __init__(self, conversion_id, title):
@@ -24,3 +27,6 @@ class Collection(IDownloadObject):
         self.title = title
         self.size = 0
         super().__init__(conversion_id)
+
+    def __str__(self):
+        return f"Collection({self.title}, {[str(task) for task in self.tasks]})"

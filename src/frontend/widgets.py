@@ -182,7 +182,7 @@ class ProgressWidget(ListItem):
                     classes="row-label",
                 )
                 if self.title
-                else Label(f"Fixing shit in the backend...", classes="row-label")
+                else Label(f"Preparing tracks...", classes="row-label")
             )
         ]
 

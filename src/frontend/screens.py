@@ -29,7 +29,7 @@ class HomeScreen(Screen):
 
     BINDINGS = [
         Binding("d", "app.push_screen('downloads')", "Downloads"),
-        Binding("s", "app.push_screen('search')", "Search Screen"),
+        Binding("s", "app.push_screen('search')", "Search"),
         Binding("p", "app.push_screen('settings')", "Settings"),
     ]
 
@@ -50,8 +50,8 @@ class DownloadScreen(Screen):
     CSS_PATH = ["styles/screens.tcss", "styles/widgets.tcss"]
 
     BINDINGS = [
-        Binding("h", "app.pop_screen()", "Home Screen"),
-        Binding("s", "app.switch_screen('search')", "Search Screen"),
+        Binding("h", "app.pop_screen()", "Home"),
+        Binding("s", "app.switch_screen('search')", "Search"),
         Binding("p", "app.switch_screen('settings')", "Settings"),
         Binding("backspace", "remove_all_tasks", "Clear list"),
     ]
@@ -94,8 +94,8 @@ class SearchScreen(Screen):
     CSS_PATH = ["styles/screens.tcss", "styles/widgets.tcss"]
 
     BINDINGS = [
-        Binding("h", "app.pop_screen()", "Home Screen"),
-        Binding("d", "app.switch_screen('downloads')", "Download Screen"),
+        Binding("h", "app.pop_screen()", "Home"),
+        Binding("d", "app.switch_screen('downloads')", "Downloads"),
         Binding("p", "app.switch_screen('settings')", "Settings"),
     ]
 
@@ -131,8 +131,8 @@ class SettingsScreen(Screen):
 
     BINDINGS = [
         Binding("h", "app.pop_screen()", "Home"),
-        Binding("d", "app.switch_screen('downloads')", "Download Screen"),
-        Binding("s", "app.switch_screen('search')", "Search Screen"),
+        Binding("d", "app.switch_screen('downloads')", "Downloads"),
+        Binding("s", "app.switch_screen('search')", "Search"),
     ]
 
     def __init__(self):

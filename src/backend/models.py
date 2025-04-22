@@ -121,6 +121,7 @@ class SoundCloudTrack:
         self.image_url = ""
         self.transcodings = []
         self.progressive_mp3_streaming_url = ""
+        self.playlist_title = ""
 
     def __str__(self):
         return f"\ntitle={self.title},\nartist={str(self.artist)}"

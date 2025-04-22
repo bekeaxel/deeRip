@@ -44,6 +44,9 @@ class SpotifyJob(IJob):
         self.cancelled = False
         super().__init__()
 
+    def __str__(self):
+        return f"spotify job, conversion task: {self.task_id}, url: {self.url}"
+
     def run(self):
         if self.task_controller.is_cancelled(self.task_id):
             return
@@ -146,6 +149,9 @@ class SearchDownloadJob(IJob):
         self.cancelled = False
         super().__init__()
 
+    def __str__(self):
+        return f"Search job, download_obj: {self.download_obj}"
+
     def run(self):
         Downloader(
             self.dz,
@@ -172,6 +178,9 @@ class SoundCloudJob(IJob):
         self.config: Config = config
         self.cancelled = False
         super().__init__()
+
+    def __str__(self):
+        return f"Soundcloud job, conversion task: {self.conversion_task_id}"
 
     def run(self):
         print("sc job started")
