@@ -60,7 +60,7 @@ class Downloader:
 
         elif isinstance(self.__download_obj, Collection):
             # sending all downloads to pool
-
+            self.__download_obj.tasks.reverse()
             results = list(
                 self.thread_executor.map(self.download, self.__download_obj.tasks)
             )

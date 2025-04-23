@@ -92,12 +92,17 @@ class TaskController:
 
     def get_all_tasks(self) -> list[dict]:
         tasks = []
+        print("printing all tasks")
         for task in self._tasks.values():
             print(task)
             if not task.state in [State.CANCELLED, State.CREATED]:
                 if isinstance(task, ConversionTask):
                     tasks.append(
-                        {"task_id": str(task.id), "progress": task.get_progress()}
+                        {
+                            "task_id": str(task.id),
+                            "progress": task.get_progress(),
+                            "index": task.index,
+                        }
                     )
                 elif isinstance(task, DownloadTask):
                     if isinstance(task.track, SoundCloudTrack):
@@ -144,6 +149,9 @@ class TaskController:
         tasks.sort(key=lambda x: x.get("index"), reverse=True)
         return tasks
 
+    def queue_conversion_task(self, task_id):
+        self._tasks.get(task_id).queue_task()
+
     def queue_downloads_for_conversion_task(self, task_id):
         for task in self._tasks.values():
             if isinstance(task, DownloadTask):
@@ -151,5 +159,4 @@ class TaskController:
                     task.conversion_task_id == task_id
                     and not task.state == State.FAILED
                 ):
-                    print(f"queueing task{task}")
                     task.queue_task()

@@ -87,6 +87,7 @@ class Controller:
         # måste skapa task innan den läggs i jobbkön för att kunna visa den i frontend
         if self.converter.valid_url(query):
             task_id = self.task_controller.create_conversion_task(query)
+            self.task_controller.queue_conversion_task(task_id)
             self.job_runner.push(
                 SpotifyJob(
                     task_id,
@@ -100,6 +101,7 @@ class Controller:
             )
         elif self.sc.valid_url(query):
             task_id = self.task_controller.create_conversion_task(query)
+            self.task_controller.queue_conversion_task(task_id)
             self.job_runner.push(
                 SoundCloudJob(
                     task_id,
@@ -113,6 +115,7 @@ class Controller:
             # default fallback is search downloads
             # query is id of song on deezer
             download_obj = self.deezer_utils.create_download_obj(query)
+            self.task_controller.queue_conversion_task(task_id)
             self.job_runner.push(
                 SearchDownloadJob(
                     download_obj,

@@ -228,10 +228,15 @@ class SoundCloudClient:
     def download_playlist(self, download_obj: Collection):
         """Download a SoundCloudPlaylist"""
         download_obj.tasks.reverse()
+        futures = []
         for task in download_obj.tasks:
-            self.thread_executor.submit(
+            future = self.thread_executor.submit(
                 self._download_track, task.track, task.id, DownloadType.PLAYLIST
             )
+        futures.append(future)
+
+        for future in futures:
+            future.result()
 
     def download_image(self, image_url):
         """Download image from url"""

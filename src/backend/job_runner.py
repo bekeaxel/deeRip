@@ -14,7 +14,9 @@ class JobRunner:
     def work(self):
         while True:
             job: IJob = self.queue.get()  # blocking
+            print("job START")
             job.run()
+            print(f"job DONE")
             self.queue.task_done()  # tells the queue that next item can be processed
 
     def push(self, job: IJob):
