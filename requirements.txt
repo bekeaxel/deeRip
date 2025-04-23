@@ -6,3 +6,4 @@ python-dotenv
 pyyaml
 textual
 textual-dev
+bs4
