@@ -17,13 +17,12 @@ class TaskController:
         self._dispatcher: MessageDispatcher = dispatcher
 
     def create_download_task(
-        self, track=None, error_obj=None, error=False, conversion_task_id=None
+        self, track=None, error=False, conversion_task_id=None
     ) -> tuple[UUID, Task]:
         with self._lock:
             task = DownloadTask(
                 index=self.INDEX,
                 track=track,
-                error_obj=error_obj,
                 error=error,
                 conversion_task_id=conversion_task_id,
             )
@@ -46,6 +45,9 @@ class TaskController:
 
     def is_cancelled(self, task_id) -> bool:
         return (task := self._tasks.get(task_id)) and task.state == State.CANCELLED
+
+    def failed(self, task_id) -> bool:
+        return (task := self._tasks.get(task_id)) and task.state == State.FAILED
 
     def cancel_task(self, task_id) -> None:
         if task := self._tasks.get(task_id):
@@ -102,6 +104,7 @@ class TaskController:
                             "task_id": str(task.id),
                             "progress": task.get_progress(),
                             "index": task.index,
+                            "state": task.state,
                         }
                     )
                 elif isinstance(task, DownloadTask):
@@ -114,45 +117,34 @@ class TaskController:
                                 "title": task.track.title,
                                 "artist": task.track.artist,
                                 "album": "",
-                                "error": task.error,
+                                "error": task.state == State.FAILED,
                                 "progress": task.progress,
                                 "index": task.index,
+                                "state": task.state,
                             }
                         )
                     elif isinstance(task.track, Track):
-                        if task.state == State.FAILED:
-                            tasks.append(
-                                {
-                                    "task_id": str(task.id),
-                                    "song_id": task.error_obj.id,
-                                    "title": task.error_obj.title,
-                                    "artist": task.error_obj.artist,
-                                    "album": task.error_obj.album,
-                                    "error": task.error,
-                                    "index": task.index,
-                                }
-                            )
-                        else:
-                            tasks.append(
-                                {
-                                    "task_id": str(task.id),
-                                    "song_id": task.track.id,
-                                    "title": task.track.title,
-                                    "artist": task.track.artist.name,
-                                    "album": task.track.album.title,
-                                    "error": task.error,
-                                    "progress": task.progress,
-                                    "index": task.index,
-                                }
-                            )
+                        tasks.append(
+                            {
+                                "task_id": str(task.id),
+                                "song_id": task.track.id,
+                                "title": task.track.title,
+                                "artist": task.track.artist.name,
+                                "album": task.track.album.title,
+                                "error": task.state == State.FAILED,
+                                "progress": task.progress,
+                                "index": task.index,
+                                "state": task.state,
+                            }
+                        )
 
         tasks.sort(key=lambda x: x.get("index"), reverse=True)
         return tasks
 
-    def queue_conversion_task(self, task_id):
+    def queue_conversion_task(self, task_id: UUID):
         self._tasks.get(task_id).queue_task()
 
-    def queue_downloads_for_conversion_task(self, task_id):
+    def queue_downloads_for_conversion_task(self, task_id: UUID):
         for task in self._tasks.values():
             if isinstance(task, DownloadTask):
                 if (

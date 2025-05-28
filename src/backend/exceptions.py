@@ -24,17 +24,6 @@ class TrackNotFoundOnDeezerException(Exception):
         super().__init__(self.message)
 
 
-class ConversionError:
-    def __init__(self, id, title, artist, album):
-        self.id = id
-        self.title = title
-        self.artist = artist
-        self.album = album
-
-    def __str__(self):
-        return f"title={self.title},\nartist={self.artist},\nalbum={self.album}"
-
-
 class ConversionCancelledException(Exception):
     def __init__(self, message="Conversion cancelled"):
         self.message = message
@@ -42,8 +31,9 @@ class ConversionCancelledException(Exception):
 
 
 class DownloadException(Exception):
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, message="Download failed"):
+        self.message = message
+        super().__init__(self.message)
 
 
 class SoundCloudError(Exception):

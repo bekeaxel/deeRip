@@ -15,6 +15,7 @@ class State(Enum):
     CANCELLED = 4
     FAILED = 5
     CREATED = 6
+    UNDEFINED = 7
 
 
 class Task:
@@ -70,25 +71,19 @@ class DownloadTask(Task):
     def __init__(
         self,
         index,
-        track: Track | SoundCloudTrack = None,
-        error_obj: ConversionError = None,
+        track: Track | SoundCloudTrack | ConversionError = None,
         error=False,
         progress=0,
         state: State = State.CREATED,
         conversion_task_id: UUID = None,
     ):
-        self.track: Track | SoundCloudTrack = track
-        self.error_obj = error_obj
+        self.track: Track | SoundCloudTrack | ConversionError = track
         self.error = error
         self.conversion_task_id = conversion_task_id
         super().__init__(index, progress, state)
 
     def __str__(self):
-        return (
-            f"d_task - task_id={self.id}, progress={self.progress}, state={self.state}, track={self.track}"
-            if self.state != State.FAILED
-            else f"d_task - task_id={self.id}, progress={self.progress}, state={self.state}, track={self.error_obj}"
-        )
+        return f"d_task - task_id={self.id}, progress={self.progress}, state={self.state}, track={self.track}"
 
 
 class ConversionTask(Task):

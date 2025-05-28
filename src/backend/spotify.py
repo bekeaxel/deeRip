@@ -4,6 +4,7 @@ from enum import Enum
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor, CancelledError
 from uuid import UUID
+from pathlib import Path
 
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -23,7 +24,7 @@ from src.backend.exceptions import *
 from src.backend.types import *
 
 DEBUG = False
-REDIRECT_URL = "http://localhost:8888/callback/"
+REDIRECT_URL = "http://127.0.0.1:8888/callback"
 
 
 class SpotifyConverter:
@@ -48,13 +49,11 @@ class SpotifyConverter:
 
     def login(self):
         """Logins a user to spotify"""
+
         client_id = self.config.get_env_variable(self.SPOTIFY_CLIENT_TOKEN)
         client_secret = self.config.get_env_variable(self.SPOTIFY_SECRET_TOKEN)
-        cache_folder = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), "../..", "cache"
-        )
-        os.makedirs(cache_folder, exist_ok=True)
-        cache_path = os.path.join(cache_folder, ".spotipy_cache")
+        cache_path = Path.home() / ".deeRip" / ".spotipy_cache"
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_handler = CacheFileHandler(cache_path=cache_path)
         try:
             self.sp = spotipy.Spotify(
@@ -78,8 +77,7 @@ class SpotifyConverter:
 
     def extract_link_id(cls, url: str, type: DownloadType) -> str | None:
         """Extracts id of spotify link"""
-        if DEBUG:
-            print("@extract_link_id")
+
         if type == DownloadType.TRACK:
             return (
                 match.group(1)
@@ -101,8 +99,6 @@ class SpotifyConverter:
 
     def generate_download_obj(self, link: str, task_id: UUID) -> IDownloadObject:
         """generates a download object from a link (track, playlist, album)"""
-        if DEBUG:
-            print("@generate_download_obj")
 
         if "track" in link:
             return self._generate_track_download_obj(
@@ -135,15 +131,14 @@ class SpotifyConverter:
             )
         else:
             _, task = self.task_controller.create_download_task(
-                error_obj=track, error=True, conversion_task_id=task_id
+                track=track, error=True, conversion_task_id=task_id
             )
 
         return Single(task_id, track.id, track.title, track.artist, track.album, task)
 
     def _generate_playlist_download_obj(self, link_id, task_id: UUID) -> Collection:
         """generates a playlist download object"""
-        if DEBUG:
-            print("@generate_playlist_download_obj")
+
         if link_id is None:
             raise InvalidSpotifyLinkException()
         # self.dz.api.get_artist(5080) sjuk cringe bild för 'various artists'
@@ -203,9 +198,6 @@ class SpotifyConverter:
 
     def _convert_tracks(self, download_obj: Collection, task_id: UUID) -> Collection:
         # converts data from spotify to deezer
-        if DEBUG:
-            print("@convert")
-
         if self.task_controller.is_cancelled(task_id):
             raise ConversionCancelledException()
 
@@ -227,7 +219,7 @@ class SpotifyConverter:
                         )
                     else:
                         _, task = self.task_controller.create_download_task(
-                            error_obj=track, error=True, conversion_task_id=task_id
+                            track=track, error=True, conversion_task_id=task_id
                         )
 
                     tasks.append(task)
@@ -240,7 +232,6 @@ class SpotifyConverter:
             raise ConversionCancelledException()
 
     def _safe_convert_track(self, track_data: dict, task_id: UUID, size: int = 1):
-
         try:
             return Track.parse_track(self._convert_track(track_data, task_id, size))
         except TrackNotFoundOnDeezerException as e:

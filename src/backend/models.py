@@ -112,6 +112,17 @@ class Track:
         return track
 
 
+class ConversionError:
+    def __init__(self, id, title, artist, album):
+        self.id = id
+        self.title = title
+        self.artist = artist
+        self.album = album
+
+    def __str__(self):
+        return f"title={self.title},\nartist={self.artist},\nalbum={self.album}"
+
+
 class SoundCloudTrack:
 
     def __init__(self):

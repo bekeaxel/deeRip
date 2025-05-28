@@ -13,6 +13,8 @@ from src.backend.download_objects import *
 from src.backend.tasks import *
 from src.backend.tagger import tag_file
 from src.backend.types import *
+from src.backend.utils import resource_path
+
 
 BASE_URL_SOUNDCLOUD = "https://soundcloud.com"
 BASE_URL_SOUNDCLOUD_TRACK = (
@@ -47,7 +49,6 @@ class SoundCloudClient:
         # parse soundcloud track
         obj = self.resolve_url(task.url, task_id)
 
-        print(obj)
         if isinstance(obj, SoundCloudTrack):
             return self.generate_track_download_obj(obj, task_id)
         elif isinstance(obj, SoundCloudPlaylist):
@@ -67,10 +68,14 @@ class SoundCloudClient:
     def generate_playlist_download_obj(
         self, playlist: SoundCloudPlaylist, task_id: UUID
     ):
+
         collection = Collection(task_id, playlist.title)
         collection.size = len(playlist.tracks)
 
         for track in playlist.tracks:
+            if self.task_controller.is_cancelled(task_id):
+                raise ConversionCancelledException()
+
             track.progressive_mp3_streaming_url = self.get_streaming_url_for_track(
                 track
             )
@@ -117,7 +122,7 @@ class SoundCloudClient:
             if self.client_id == "-1":
                 raise SoundCloudError("Error fetching client id")
             self.config.update_env_variable(SC_CLIENT_ID, self.client_id)
-            return self.try_get(url, fn)
+            return self.try_get(url, task_id, fn)
 
     def resolve_url(self, url, task_id: UUID):
         """Calls SoundCloud API getting info on object"""
@@ -170,6 +175,7 @@ class SoundCloudClient:
 
     def download(self, download_obj: IDownloadObject):
         """Download a download_obj"""
+        print("hej")
         if isinstance(download_obj, Single):
             self.download_track(download_obj)
         elif isinstance(download_obj, Collection):
@@ -184,7 +190,7 @@ class SoundCloudClient:
         if task.is_cancelled:
             raise SoundCloudError("Download task cancelled")
 
-        self._download_track(task.track, task.i, DownloadType.TRACK)
+        self._download_track(task.track, task.id, DownloadType.TRACK)
 
     def _download_track(
         self, track: SoundCloudTrack, task_id: UUID, download_type: DownloadType
@@ -201,26 +207,28 @@ class SoundCloudClient:
             config = self.config.load_config()
 
             # get path
-            download_folder = config["download_folder"]
+            folder_path = Path(config["download_folder"])
 
             if download_type == DownloadType.PLAYLIST:
-                download_folder += f"/{track.playlist_title}"
+                folder_path = folder_path / track.playlist_title
 
-            path = download_folder + "/" + track.title + MP3_EXTENSION
+            full_path = Path(folder_path / (track.title + MP3_EXTENSION))
 
             # check if download is allowed
-            if Path(path).exists() and not config["download_override"]:
-                raise SoundCloudError("File with given path already exists")
+            if full_path.exists() and not config["download_override"]:
+                raise SoundCloudError(
+                    "File with given path already exists and download override is inactive"
+                )
 
             # create file
-            Path(download_folder).mkdir(parents=True, exist_ok=True)
+            folder_path.mkdir(parents=True, exist_ok=True)
 
             # stream to file
-            self.stream_to_disk(track.progressive_mp3_streaming_url, path, task_id)
+            self.stream_to_disk(track.progressive_mp3_streaming_url, full_path, task_id)
 
             # tag file
             image = self.download_image(track.image_url)
-            self.tag_file(track, path, image)
+            self.tag_file(track, full_path, image)
 
         except SoundCloudError as e:
             self.task_controller.fail_task(task_id)
@@ -245,7 +253,7 @@ class SoundCloudClient:
                 response = self.session.get(image_url, headers=HEADERS, timeout=10)
                 response.raise_for_status()
                 return response.content
-            with open("images/song_icon.png", "rb") as default_image:
+            with open(resource_path("images/song_icon.png"), "rb") as default_image:
                 return default_image.read()
         except Exception:
             raise SoundCloudError("Error while downloading image")

@@ -21,7 +21,7 @@ deeRip requires access tokens for Spotify and Deezer to interact with their APIs
 
 ### Spotify
 Create a developer app at Spotify Developer Dashboard.
-- Add http://localhost:8888/callback/ under Redirect URIs
+- Add http://127.0.0.1:8888/callback under Redirect URIs
 - Select Web API under API/SDKs
 
 Once created, you’ll find your client ID and secret—enter them in deeRip’s settings tab.

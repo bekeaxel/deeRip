@@ -2,4 +2,3 @@ bit_rate: MP3_128
 concurrency_workers: '4'
 download_folder: /
 download_override: true
-env_file: ../../config/tokens.env

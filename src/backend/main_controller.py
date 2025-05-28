@@ -1,12 +1,5 @@
-import os
-from concurrent.futures import ThreadPoolExecutor
-from queue import Queue
-import shutil
-from pathlib import Path
-
+import sys
 from deezer import Deezer
-
-# from deemix.types.DownloadObjects import *
 
 from src.backend.downloader import Downloader
 from src.backend.spotify import SpotifyConverter
@@ -47,14 +40,7 @@ class Controller:
 
     def setup_config(self):
         """Setup configurations"""
-        if not Path("config/config.yml").exists():
-            shutil.copy("config/config_default.yml", "config/config.yml")
-
-        if not Path("config/tokens.env").exists():
-            shutil.copy("config/tokens_default.env", "config/tokens.env")
-
         self.config: Config = Config()
-        self.config.load_env_variables()
         self.converter: SpotifyConverter = SpotifyConverter(
             self.dz, self.config, self.task_controller
         )
@@ -115,7 +101,7 @@ class Controller:
             # default fallback is search downloads
             # query is id of song on deezer
             download_obj = self.deezer_utils.create_download_obj(query)
-            self.task_controller.queue_conversion_task(task_id)
+            self.task_controller.queue_conversion_task(download_obj.task.id)
             self.job_runner.push(
                 SearchDownloadJob(
                     download_obj,

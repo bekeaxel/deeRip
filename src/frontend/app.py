@@ -24,8 +24,9 @@ class DeeRipApp(App):
     spotify = reactive(False)
     deezer = reactive(False)
 
-    def __init__(self):
+    def __init__(self, dev_mode=False):
         super().__init__()
+        self.dev_mode = dev_mode
         self.controller: Controller = Controller()
         self.config: Config = Config()
         self.controller.start_up(self)

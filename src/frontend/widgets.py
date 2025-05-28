@@ -12,6 +12,7 @@ from textual import work, on
 from src.frontend.messages import *
 from src.backend.exceptions import *
 from src.backend.main_controller import Controller
+from src.backend.tasks import State
 
 EPSILON = 99.99
 
@@ -65,12 +66,14 @@ class TaskViewer(Static):
                     artist=task.get("artist", "?"),
                     album=task.get("album", "?"),
                     progress=task.get("progress", 0),
+                    state=task.get("state", State.UNDEFINED),
                 )
                 components.append(widget)
             else:
                 widget = ProgressWidget(
                     task_id=f"task_{task.get('task_id', "?")}",
                     progress=task.get("progress", 0),
+                    state=task.get("state", State.UNDEFINED),
                     conversion=True,
                 )
                 components.append(widget)
@@ -94,6 +97,7 @@ class TaskViewer(Static):
                         artist=song.get("artist", "?"),
                         album=song.get("album", "?"),
                         progress=song.get("progress", 0),
+                        state=song.get("state", State.UNDEFINED),
                     )
                 )
             else:
@@ -146,9 +150,9 @@ class TaskViewer(Static):
 
     @on(TaskFailedMessage)
     def on_task_failed(self, message: TaskFailedMessage):
-        self.query_one(f"#task_{message.task_id}", ProgressWidget).styles.background = (
-            "#a65454"
-        )
+        widget = self.query_one(f"#task_{message.task_id}", ProgressWidget)
+        widget.state = State.FAILED
+        widget.styles.background = "#a65454"
 
 
 class ProgressWidget(ListItem):
@@ -165,6 +169,7 @@ class ProgressWidget(ListItem):
         album=None,
         progress=0,
         conversion=False,
+        state=State.UNDEFINED,
     ):
         super().__init__(id=task_id)
         self.song_id: str = song_id
@@ -173,6 +178,7 @@ class ProgressWidget(ListItem):
         self.album: str = album
         self.progress: int = progress
         self.conversion: bool = conversion
+        self.state: State = state
 
     def compose(self):
         components = [
@@ -209,7 +215,8 @@ class ProgressWidget(ListItem):
     def on_widget_click(self, event: events.Click):
         from src.frontend.screens import TaskInfoScreen
 
-        self.app.push_screen(TaskInfoScreen(self))
+        if self.app.dev_mode:
+            self.app.push_screen(TaskInfoScreen(self))
 
 
 class ErrorWidget(ListItem):
@@ -220,6 +227,7 @@ class ErrorWidget(ListItem):
         self.title: str = title
         self.artist: str = artist
         self.album: str = album
+        self.state = State.FAILED
 
     def compose(self):
         yield Horizontal(

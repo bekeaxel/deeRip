@@ -1,52 +1,55 @@
 import yaml
 import os
+import sys
 from pathlib import Path
 import dotenv
 from dotenv import load_dotenv
+import shutil
+
+from src.backend.utils import resource_path
 
 
 class Config:
 
-    def __init__(self, config_path: str = "../../config/config.yml"):
-        self.config_path = Path(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), config_path)
-        )
+    def __init__(self):
+        self.user_config_path = Path.home() / ".deeRip" / "config.yml"
+        self.user_env_path = Path.home() / ".deeRip" / "tokens.env"
 
-    def _env_path(self):
-        return Path(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                self.load_config()["env_file"],
+        self.user_config_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if not self.user_config_path.exists():
+            shutil.copy(
+                resource_path("config/config_default.yml"), self.user_config_path
             )
-        ).absolute()
+            # set default download folder cross-platform
+            config = self.load_config()
+            config["download_folder"] = Path.home() / "downloads" / "deeRip"
+            self.update_config(config)
+
+        if not self.user_env_path.exists():
+            shutil.copy(resource_path("config/tokens_default.env"), self.user_env_path)
+
+        dotenv.load_dotenv(self.user_env_path)
 
     def load_config(self) -> dict:
-        if not self.config_path.exists():
+        if not self.user_config_path.exists():
             raise FileNotFoundError(f"Config file was not found")
 
-        with open(self.config_path, "r") as file:
+        with open(self.user_config_path, "r") as file:
             return yaml.safe_load(file)
 
     def save_config(self, config: dict):
-        with open(self.config_path, "w") as file:
+        with open(self.user_config_path, "w") as file:
             yaml.dump(config, file, default_flow_style=False)
 
     def update_config(self, updates: dict):
-        # load in config
+        updates["download_folder"] = str(updates["download_folder"])
         config = self.load_config()
-        # update the values
         config.update(updates)
-        # save the updates
         self.save_config(config)
 
-    def load_env_variables(self):
-        # load variables in as env variables on computer
-        dotenv.load_dotenv(self._env_path())
-
     def update_env_variable(self, key: str, value: str):
-        # update value in env file
-        dotenv.set_key(self._env_path(), key, value)
-        # reload all variables in memory
+        dotenv.set_key(self.user_env_path, key, value)
         os.environ[key] = value
 
     def get_env_variable(self, key: str):

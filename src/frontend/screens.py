@@ -170,7 +170,7 @@ class SettingsScreen(Screen):
             Horizontal(
                 Label("Download folder", classes="setting-descriptor"),
                 Label(
-                    self.config.load_config().get("download_folder") or "not set",
+                    self.config.load_config().get("download_folder"),
                     id="download_folder_label",
                     classes="download-folder",
                 ),
@@ -184,14 +184,14 @@ class SettingsScreen(Screen):
                 classes="row",
             ),
             Horizontal(
-                Label("Bit rate", classes="setting-descriptor"),
+                Label("Bit rate Deezer", classes="setting-descriptor"),
                 Select(
                     options=[("MP3 320 Mbps", 1), ("MP3 128 Mbps", 2), ("FLAC", 3)],
                     prompt="Bit rate",
                     value=self.bit_rate_config_2_select(),
                     allow_blank=False,
                     id="bit_rate",
-                    tooltip="bit rate for downloading from Deezer",
+                    tooltip="bit rate for downloading from Deezer (spotify links)",
                 ),
                 classes="row",
             ),
@@ -360,7 +360,7 @@ class DirectoryScreen(ModalScreen):
 
     def compose(self):
         yield Vertical(
-            FilteredDirectoryTree("~/"),
+            FilteredDirectoryTree(Path.home()),
             Horizontal(
                 Button("Cancel", "warning", action="app.pop_screen"),
                 Button("Save", "success", id="save_dir", disabled=True),
@@ -381,7 +381,7 @@ class DirectoryScreen(ModalScreen):
 
 class TaskInfoScreen(ModalScreen):
     def __init__(self, widget):
-        self.widget = widget
+        self.widget: ProgressWidget | ErrorWidget = widget
         super().__init__(id=f"info_{widget.id}")
 
     def compose(self):
@@ -392,6 +392,7 @@ class TaskInfoScreen(ModalScreen):
             Label(f"artist   - {self.widget.artist}"),
             Label(f"album    - {self.widget.album}"),
             Label(f"progress - {self.widget.progress}"),
+            Label(f"state    - {self.widget.state.name}"),
             Button("Close", "warning"),
         )
         yield Button("", id="focus_sink", classes="focus-sink")  # focus sink

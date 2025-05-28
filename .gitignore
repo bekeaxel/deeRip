@@ -5,3 +5,7 @@ developer_notes.md
 config/tokens.env
 config/config.yml
 resource/*
+releases/*
+build/*
+dist/*
+deeRip.iconset/*

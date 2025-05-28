@@ -74,6 +74,7 @@ class SpotifyJob(IJob):
                         "album": download_obj.album,
                         "error": download_obj.task.error,
                         "index": download_obj.task.index,
+                        "state": download_obj.task.state,
                     }
                 )
 
@@ -89,16 +90,7 @@ class SpotifyJob(IJob):
                             "album": task.track.album.title,
                             "error": task.error,
                             "index": task.index,
-                        }
-                        if not task.error
-                        else {
-                            "task_id": str(task.id),
-                            "song_id": task.error_obj.id,
-                            "title": task.error_obj.title,
-                            "artist": task.error_obj.artist,
-                            "album": task.error_obj.album,
-                            "error": task.error,
-                            "index": task.index,
+                            "state": task.state,
                         }
                     )
                 download_tasks.sort(key=lambda x: x.get("index"), reverse=True)
@@ -108,20 +100,17 @@ class SpotifyJob(IJob):
                 self.task_id, download_tasks
             )
 
-        # fånga alla olika exceptions här. låt de inte gå. Kanske skicak meddelande till frontend sen.
-
-        except ConversionCancelledException:
-            print("conversion cancelled")
-            self.cancelled = True
         except (
             InvalidSpotifyLinkException,
             TrackNotFoundOnDeezerException,
+            ConversionCancelledException,
             Exception,
         ) as e:
+            print(e.message)
             self.cancelled = True
 
         if not self.cancelled:
-            # download songs
+            time.sleep(1)  # wait for tasks to be created in frontend
             Downloader(
                 self.dz,
                 download_obj,
@@ -208,6 +197,7 @@ class SoundCloudJob(IJob):
                         "album": "",
                         "error": download_obj.task.error,
                         "index": download_obj.task.index,
+                        "state": download_obj.task.state,
                     }
                 )
             elif isinstance(download_obj, Collection):
@@ -221,6 +211,7 @@ class SoundCloudJob(IJob):
                             "album": "",
                             "error": task.error,
                             "index": task.index,
+                            "state": task.state,
                         }
                     )
 
@@ -230,6 +221,11 @@ class SoundCloudJob(IJob):
             )
 
             print(f"tasks after conversion {download_tasks}")
+        except ConversionCancelledException as e:
+            print(f"error: {e.message}")
+            self.task_controller.cancel_task(self.conversion_task_id)
+            self.cancelled = True
+            return
 
         except SoundCloudError as e:
             print(f"error: {e.message}")
@@ -239,10 +235,7 @@ class SoundCloudJob(IJob):
 
         if not self.cancelled:
             try:
+                time.sleep(1)  # wait for tasks to be created in frontend
                 self.sc.download(download_obj)
             except SoundCloudError as e:
                 print("should not be caught here")
-
-        # convert tracks (conversion task)
-        # dowload tracks (download tasks)
-        # snacka med frontend skicka
