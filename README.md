@@ -1,6 +1,8 @@
 # deeRip
 
-deeRip is a personal music exporter for Spotify and Deezer, built with Python and Textual (shoutout!). It runs entirely in your terminal. Run the commands below to get started.
+deeRip is a personal music exporter for Spotify, Deezer and SoundCloud, built with Python and Textual (shoutout!). It runs entirely in your terminal. Run the commands below to build it or download the binary installer to get started.
+
+Note! the binary comes with python built-in, so it is not necessary to have python installed to run it. However, everything under the Credentials-section is still needed.
 
 
 ## System Requirements
