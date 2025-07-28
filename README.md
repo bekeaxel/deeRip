@@ -35,6 +35,12 @@ deeRip uses your personal Deezer session to access your library and metadata.
 - Go to the Application tab
 - Under Cookies for https://www.deezer.com, find the arl token
 
+# Running from release
+If you get a message saying that the file is damaged and cannot be opened, run this command
+```
+xattr -rd com.apple.quarantine /Applications/deeRip.app
+```
+
 
 ⚠️ This tool is intended for personal use only.
 It does not bypass DRM or access paid content without authorization.
