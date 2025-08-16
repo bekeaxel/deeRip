@@ -245,7 +245,6 @@ class SpotifyConverter:
             raise ConversionCancelledException()
         except Exception as e:
             print(e)
-            print("borde inte va här")
 
     def _convert_track(self, track_data: dict, task_id: UUID, size: int = 1) -> dict:
         """Convert a track using ISRC or fallback to track metadata search."""

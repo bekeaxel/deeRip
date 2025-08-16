@@ -175,7 +175,6 @@ class SoundCloudClient:
 
     def download(self, download_obj: IDownloadObject):
         """Download a download_obj"""
-        print("hej")
         if isinstance(download_obj, Single):
             self.download_track(download_obj)
         elif isinstance(download_obj, Collection):

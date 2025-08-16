@@ -64,7 +64,6 @@ class SpotifyJob(IJob):
             download_tasks = []
 
             if isinstance(download_obj, Single):
-
                 download_tasks.append(
                     {
                         "task_id": str(download_obj.task.id),
@@ -80,19 +79,32 @@ class SpotifyJob(IJob):
 
             if isinstance(download_obj, Collection):
                 for task in download_obj.tasks:
-
-                    download_tasks.append(
-                        {
-                            "task_id": str(task.id),
-                            "song_id": task.track.id,
-                            "title": task.track.title,
-                            "artist": task.track.artist.name,
-                            "album": task.track.album.title,
-                            "error": task.error,
-                            "index": task.index,
-                            "state": task.state,
-                        }
-                    )
+                    if task.error:
+                        download_tasks.append(
+                            {
+                                "task_id": str(task.id),
+                                "song_id": task.track.id,
+                                "title": task.track.title,
+                                "artist": task.track.artist,
+                                "album": task.track.album,
+                                "error": task.error,
+                                "index": task.index,
+                                "state": task.state,
+                            }
+                        )
+                    else:
+                        download_tasks.append(
+                            {
+                                "task_id": str(task.id),
+                                "song_id": task.track.id,
+                                "title": task.track.title,
+                                "artist": task.track.artist.name,
+                                "album": task.track.album.title,
+                                "error": task.error,
+                                "index": task.index,
+                                "state": task.state,
+                            }
+                        )
                 download_tasks.sort(key=lambda x: x.get("index"), reverse=True)
 
             # tell frontend to create download tasks
