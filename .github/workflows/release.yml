@@ -39,3 +39,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: releases/*/deeRip-v*.dmg
+          token: ${{ secrets.GH_PAT }}
