@@ -1,0 +1,38 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      # Checkout your repo so the workflow has access to your code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Set up Python (adjust version if needed)
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pyinstaller
+          brew install create-dmg
+
+      # Run your build script
+      - name: Build DMG
+        run: ./build.sh "${GITHUB_REF_NAME#v}"
+
+      # Upload artifact to GitHub release
+      - name: Upload release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: releases/*/deeRip-v*.dmg
