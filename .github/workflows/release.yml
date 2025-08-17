@@ -28,6 +28,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install pyinstaller
+          pip install -r requirements.txt
           brew install create-dmg
 
       # Run your build script
