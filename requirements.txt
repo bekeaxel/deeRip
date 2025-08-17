@@ -4,6 +4,6 @@ spotipy
 mutagen
 python-dotenv
 pyyaml
-textual
+textual==1.0.0
 textual-dev
 bs4
