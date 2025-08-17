@@ -13,7 +13,8 @@ datas = [
 hiddenimports = [
     "textual.widgets._markdown_viewer",
     "textual.widgets._tab",
-    "textual.widgets._tab_pane"
+    "textual.widgets._tab_pane",
+    "textual.widgets._collapsible_title"
 ]
 
 a = Analysis(
