@@ -7,3 +7,4 @@ pyyaml
 textual==1.0.0
 textual-dev
 bs4
+pyinstaller==6.13.0
