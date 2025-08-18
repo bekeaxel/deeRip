@@ -6,37 +6,53 @@ on:
       - "v*"
 
 permissions:
-    contents: write
+  contents: write
 
 jobs:
   build:
-    runs-on: macos-14
+    strategy:
+      matrix:
+        os: [macos-14, windows-latest]   # mac + win
+    runs-on: ${{ matrix.os }}
 
     steps:
-      # Checkout your repo so the workflow has access to your code
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Set up Python (adjust version if needed)
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # Install dependencies
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          brew install create-dmg
+        shell: bash
 
-      # Run your build script
-      - name: Build DMG
+      - name: Install create-dmg (mac only)
+        if: runner.os == 'macOS'
+        run: brew install create-dmg
+
+      - name: Build macOS DMG
+        if: runner.os == 'macOS'
         run: ./build.sh "${GITHUB_REF_NAME#v}"
 
-      # Upload artifact to GitHub release
-      - name: Upload release
+      - name: Build Windows ZIP
+        if: runner.os == 'Windows'
+        run: ./build-windows.ps1 "${env:GITHUB_REF_NAME#v}"
+        shell: pwsh
+
+      - name: Upload release (macOS)
+        if: runner.os == 'macOS'
         uses: softprops/action-gh-release@v2
         with:
           files: releases/*/deeRip-v*.dmg
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Upload release (Windows)
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: releases/*/deeRip-v*-win64.zip
           token: ${{ secrets.GH_PAT }}
