@@ -23,7 +23,23 @@ if (-not (Test-Path $releasePath)) {
     New-Item -ItemType Directory -Force -Path $releasePath | Out-Null
 }
 
-# Zip the EXE and any required files (adjust paths if you have additional files)
-Compress-Archive -Path "dist\deeRip.exe" -DestinationPath "$releasePath\deeRip-v$Version-win64.zip" -Force
+# Make sure the dist folder exists
+$distPath = "dist"
+if (-not (Test-Path $distPath)) {
+    Write-Host "Error: dist folder not found. PyInstaller may have failed."
+    exit 1
+}
 
-Write-Host "Windows build completed: $releasePath\deeRip-v$Version-win64.zip"
+# Collect all files from dist folder for zipping
+$zipFiles = Get-ChildItem -Path $distPath -Recurse | ForEach-Object { $_.FullName }
+
+# Remove existing zip if present
+$zipPath = "$releasePath\deeRip-v$Version-win64.zip"
+if (Test-Path $zipPath) {
+    Remove-Item $zipPath -Force
+}
+
+# Zip the EXE and all required files
+Compress-Archive -Path $zipFiles -DestinationPath $zipPath -Force
+
+Write-Host "Windows build completed: $zipPath"
