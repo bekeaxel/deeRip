@@ -10,10 +10,10 @@ permissions:
 
 jobs:
   build:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-14, windows-latest]   # mac + win
-    runs-on: ${{ matrix.os }}
+        os: [macos-14, windows-2022]
 
     steps:
       - name: Checkout
@@ -26,33 +26,31 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
+          pip install pyinstaller
           pip install -r requirements.txt
+          if [ "${{ runner.os }}" == "macOS" ]; then
+            brew install create-dmg
+          fi
         shell: bash
 
-      - name: Install create-dmg (mac only)
-        if: runner.os == 'macOS'
-        run: brew install create-dmg
+      - name: Build App on macOS
+        if: matrix.os == 'macos-14'
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          ./build.sh "$version"
+        shell: bash
 
-      - name: Build macOS DMG
-        if: runner.os == 'macOS'
-        run: ./build.sh "${GITHUB_REF_NAME#v}"
-
-      - name: Build Windows ZIP
-        if: runner.os == 'Windows'
-        run: ./build-windows.ps1 "${env:GITHUB_REF_NAME#v}"
+      - name: Build App on Windows
+        if: matrix.os == 'windows-2022'
+        run: |
+          $version = $env:GITHUB_REF_NAME
+          if ($version.StartsWith("v")) { $version = $version.Substring(1) }
+          ./build-windows.ps1 $version
         shell: pwsh
 
-      - name: Upload release (macOS)
-        if: runner.os == 'macOS'
+      - name: Upload Release Artifact
         uses: softprops/action-gh-release@v2
         with:
-          files: releases/*/deeRip-v*.dmg
-          token: ${{ secrets.GH_PAT }}
-
-      - name: Upload release (Windows)
-        if: runner.os == 'Windows'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: releases/*/deeRip-v*-win64.zip
+          files: ${{ runner.os == 'Windows' && 'releases/*/deeRip-v*.zip' || 'releases/*/deeRip-v*.dmg' }}
           token: ${{ secrets.GH_PAT }}
