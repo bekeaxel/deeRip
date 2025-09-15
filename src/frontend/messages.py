@@ -1,7 +1,4 @@
-from uuid import UUID
-
 from textual.message import Message
-from src.backend.tasks import State
 
 # Backend -> frontend messages
 

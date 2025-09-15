@@ -1,4 +1,17 @@
 
+.search-bar {
+    width: 100%;
+    height: auto;
+}
+
+.search-input {
+    width: 1fr; /* take remaining space */
+}
+
+.clear-btn {
+    margin-left: 1; /* little gap so it’s visible */
+}
+
 # -------- DOWNLOADS --------
 
 TaskViewer ListView {

@@ -4,7 +4,17 @@ from typing import Iterable
 
 from textual.reactive import reactive
 from textual import events
-from textual.widgets import *
+from textual.widgets import (
+    Static,
+    Input,
+    ListView,
+    ListItem,
+    Button,
+    ProgressBar,
+    Label,
+    Header,
+    DirectoryTree,
+)
 from textual.containers import *
 from textual.css.query import NoMatches
 from textual import work, on
@@ -19,14 +29,22 @@ EPSILON = 99.99
 
 class SearchBar(Static):
 
+    CSS_PATH = ["styles/widgets.tcss"]
+
     def __init__(self, id=None, classes=None):
         super().__init__(id=id, classes=classes)
 
     def compose(self):
-        yield Input(
-            placeholder="rip it?",
-            select_on_focus=False,
-            tooltip="Spotify link or whatever",
+        yield Horizontal(
+            Input(
+                placeholder="rip it?",
+                select_on_focus=False,
+                tooltip="Spotify link or whatever",
+                classes="search-input",
+                id="search-bar",
+            ),
+            Button("Clear", classes="clear-btn"),
+            classes="search-bar",
         )
 
     def set_value(self, value: str):
@@ -36,6 +54,11 @@ class SearchBar(Static):
     async def on_input_submitted(self, message: Input.Submitted):
         if value := message.value.strip():
             self.app.post_message(SearchQueryRequestMessage(value))
+
+    @on(Button.Pressed)
+    def on_clear_button_clicked(self, event: Button.Pressed):
+        print("axel")
+        self.query_one("#search-bar", Input).clear()
 
 
 class TaskViewer(Static):

@@ -1,5 +1,3 @@
-import os
-
 from textual.screen import Screen, ModalScreen
 from textual import on
 from textual.widgets import (
@@ -10,13 +8,12 @@ from textual.widgets import (
     DirectoryTree,
     Switch,
     Input,
-    MaskedInput,
+    Checkbox,
+    LoadingIndicator,
 )
-from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import *
 from textual.validation import Integer, Length
-from textual.events import Blur
 
 from src.frontend.messages import *
 from src.backend.main_controller import Controller
@@ -24,33 +21,11 @@ from src.backend.configuration import Config
 from src.frontend.widgets import *
 
 
-class HomeScreen(Screen):
-    CSS_PATH = "styles/screens.tcss"
-
-    BINDINGS = [
-        Binding("d", "app.push_screen('downloads')", "Downloads"),
-        Binding("s", "app.push_screen('search')", "Search"),
-        Binding("p", "app.push_screen('settings')", "Settings"),
-    ]
-
-    def compose(self) -> ComposeResult:
-        yield LoginHeader()
-        yield Container(SearchBar(id="search-bar-home"), classes="home-container")
-
-        yield Footer(show_command_palette=False)
-        yield Button("", id="focus_sink", classes="focus-sink")  # focus sink
-
-    def _on_screen_resume(self):
-        self.screen.query_one("#focus_sink").focus()
-        return super()._on_screen_resume()
-
-
 class DownloadScreen(Screen):
 
     CSS_PATH = ["styles/screens.tcss", "styles/widgets.tcss"]
 
     BINDINGS = [
-        Binding("h", "app.pop_screen()", "Home"),
         Binding("s", "app.switch_screen('search')", "Search"),
         Binding("p", "app.switch_screen('settings')", "Settings"),
         Binding("backspace", "remove_all_tasks", "Clear list"),
@@ -94,7 +69,6 @@ class SearchScreen(Screen):
     CSS_PATH = ["styles/screens.tcss", "styles/widgets.tcss"]
 
     BINDINGS = [
-        Binding("h", "app.pop_screen()", "Home"),
         Binding("d", "app.switch_screen('downloads')", "Downloads"),
         Binding("p", "app.switch_screen('settings')", "Settings"),
     ]
@@ -130,7 +104,7 @@ class SettingsScreen(Screen):
     CSS_PATH = ["styles/screens.tcss", "styles/widgets.tcss"]
 
     BINDINGS = [
-        Binding("h", "app.pop_screen()", "Home"),
+        # Binding("h", "app.pop_screen()", "Home"),
         Binding("d", "app.switch_screen('downloads')", "Downloads"),
         Binding("s", "app.switch_screen('search')", "Search"),
     ]

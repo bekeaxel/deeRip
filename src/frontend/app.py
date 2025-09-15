@@ -1,8 +1,6 @@
 from textual import events
 from textual.app import App
 from textual import on
-from textual.binding import Binding
-from textual.widgets import Label
 
 from src.frontend.messages import *
 from src.backend.main_controller import Controller
@@ -15,7 +13,7 @@ class DeeRipApp(App):
     CSS_PATH = "styles/global.tcss"
 
     SCREENS = {
-        "home": HomeScreen,
+        # "home": HomeScreen,
         "downloads": DownloadScreen,
         "search": SearchScreen,
         "settings": SettingsScreen,
@@ -32,7 +30,7 @@ class DeeRipApp(App):
         self.controller.start_up(self)
 
     def on_mount(self):
-        self.push_screen("home")
+        self.push_screen("downloads")
         self.title = "spotify: not connected, deezer: not connected"
 
     @on(SearchQueryRequestMessage)
