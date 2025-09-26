@@ -1,4 +1,5 @@
 from src.frontend.messages import *
+from uuid import UUID
 
 
 class MessageDispatcher:

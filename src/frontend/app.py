@@ -13,7 +13,6 @@ class DeeRipApp(App):
     CSS_PATH = "styles/global.tcss"
 
     SCREENS = {
-        # "home": HomeScreen,
         "downloads": DownloadScreen,
         "search": SearchScreen,
         "settings": SettingsScreen,

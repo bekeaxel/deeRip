@@ -118,7 +118,7 @@ class SpotifyJob(IJob):
             ConversionCancelledException,
             Exception,
         ) as e:
-            print(e.message)
+            print(e)
             self.cancelled = True
 
         if not self.cancelled:
