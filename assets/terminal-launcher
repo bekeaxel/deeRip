@@ -1,8 +1,23 @@
 #!/bin/bash
 DIR="$(cd "$(dirname "$0")" && pwd)"
-osascript <<EOF
+
+if [ -d "/Applications/iTerm.app" ] || [ -d "$HOME/Applications/iTerm.app" ]; then
+    # Use iTerm if installed
+    osascript <<EOF
+tell application "iTerm"
+    activate
+    tell current window
+        create tab with default profile
+        tell current session to write text "$DIR/deeRip"
+    end tell
+end tell
+EOF
+else
+    # Fall back to Terminal
+    osascript <<EOF
 tell application "Terminal"
     activate
     do script "$DIR/deeRip"
 end tell
 EOF
+fi
