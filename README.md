@@ -13,7 +13,6 @@ pip install -r requirements.txt
 textual run run.py
 ```
 ## Credentials
-deeRip requires access tokens for Spotify and Deezer to interact with their APIs. You must supply your own credentials.
 
 ### Spotify
 Create a developer app at Spotify Developer Dashboard.
