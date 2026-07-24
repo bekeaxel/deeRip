@@ -72,6 +72,7 @@ class SpotifyJob(IJob):
                         "artist": download_obj.artist,
                         "album": download_obj.album,
                         "error": download_obj.task.error,
+                        "reason": getattr(download_obj.task.track, "reason", None),
                         "index": download_obj.task.index,
                         "state": download_obj.task.state,
                     }
@@ -88,6 +89,7 @@ class SpotifyJob(IJob):
                                 "artist": task.track.artist,
                                 "album": task.track.album,
                                 "error": task.error,
+                                "reason": getattr(task.track, "reason", None),
                                 "index": task.index,
                                 "state": task.state,
                             }
@@ -112,13 +114,24 @@ class SpotifyJob(IJob):
                 self.task_id, download_tasks
             )
 
+        except ConversionCancelledException as e:
+            print(e)
+            self.cancelled = True
+
         except (
             InvalidSpotifyLinkException,
             TrackNotFoundOnDeezerException,
-            ConversionCancelledException,
-            Exception,
+            SpotifyAPIError,
         ) as e:
             print(e)
+            self.task_controller.fail_task(self.task_id, reason=e.message)
+            self.cancelled = True
+
+        except Exception as e:
+            print(e)
+            self.task_controller.fail_task(
+                self.task_id, reason=f"Unexpected error: {e}"
+            )
             self.cancelled = True
 
         if not self.cancelled:

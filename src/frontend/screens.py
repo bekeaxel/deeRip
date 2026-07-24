@@ -312,7 +312,7 @@ class SettingsScreen(Screen):
         ):
             self.config.update_env_variable("SPOTIFY_CLIENT_TOKEN", client.value)
             self.config.update_env_variable("SPOTIFY_SECRET_TOKEN", secret.value)
-            self.controller.login()
+            self.controller.login(force_spotify_relogin=True)
         self.app.call_from_thread(self.app.pop_screen)
 
     @work(thread=True)

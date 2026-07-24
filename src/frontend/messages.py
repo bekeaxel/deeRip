@@ -31,8 +31,9 @@ class LoginStatusMessage(Message):
 
 
 class TaskFailedMessage(Message):
-    def __init__(self, task_id: str):
+    def __init__(self, task_id: str, reason: str = "Unknown error"):
         self.task_id: str = task_id
+        self.reason: str = reason
         super().__init__()
 
 

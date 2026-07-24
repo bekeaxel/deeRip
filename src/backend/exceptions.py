@@ -4,6 +4,14 @@ class InvalidSpotifyLinkException(Exception):
         super().__init__(self.message)
 
 
+class SpotifyAPIError(Exception):
+    """Raised when fetching or reading data from Spotify's API fails."""
+
+    def __init__(self, message="Couldn't reach Spotify. Try again in a moment."):
+        self.message = message
+        super().__init__(self.message)
+
+
 class ISRCNotAvailableOnSpotifyException(Exception):
     def __init__(self, message="Isrc was not found in track metadata"):
         self.message = message
