@@ -32,6 +32,16 @@ class SpotifyConverter:
     SPOTIFY_CLIENT_TOKEN = "SPOTIFY_CLIENT_TOKEN"
     SPOTIFY_SECRET_TOKEN = "SPOTIFY_SECRET_TOKEN"
 
+    SPOTIFY_AUTH_ERROR_MESSAGE = (
+        "Spotify session expired or was revoked. Reconnect in Settings."
+    )
+    SPOTIFY_HTTP_ERROR_MESSAGES = {
+        401: SPOTIFY_AUTH_ERROR_MESSAGE,
+        403: SPOTIFY_AUTH_ERROR_MESSAGE,
+        429: "Spotify rate limit reached. Wait a moment and try again.",
+        404: "Spotify link not found.",
+    }
+
     def __init__(self, dz: Deezer, config: Config, task_controller: TaskController):
         self.config: Config = config
         self.dz: Deezer = dz
@@ -99,14 +109,10 @@ class SpotifyConverter:
     def _describe_spotify_error(self, e: Exception) -> str:
         """Turns a raw spotipy exception into a message a user can act on."""
         if isinstance(e, SpotifyOauthError):
-            return "Spotify session expired or was revoked. Reconnect in Settings."
+            return self.SPOTIFY_AUTH_ERROR_MESSAGE
         if isinstance(e, SpotifyException):
-            if e.http_status in (401, 403):
-                return "Spotify session expired or was revoked. Reconnect in Settings."
-            if e.http_status == 429:
-                return "Spotify rate limit reached. Wait a moment and try again."
-            if e.http_status == 404:
-                return "Spotify link not found."
+            if e.http_status in self.SPOTIFY_HTTP_ERROR_MESSAGES:
+                return self.SPOTIFY_HTTP_ERROR_MESSAGES[e.http_status]
             return f"Spotify API error ({e.http_status})."
         return "Couldn't reach Spotify. Check your connection and try again."
 
