@@ -34,6 +34,9 @@ If you get a message saying that the file is damaged and cannot be opened, run t
 xattr -rd com.apple.quarantine /Applications/deeRip.app
 ```
 
+## Changelog
+See [patch-notes/](patch-notes/) for release notes.
+
 
 ⚠️ This tool is intended for personal use only.
 It does not bypass DRM or access paid content without authorization.

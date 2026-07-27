@@ -46,14 +46,19 @@ class Controller:
         )
         self.sc: SoundCloudClient = SoundCloudClient(self.task_controller, self.config)
 
-    def login(self):
-        """Logins a client to spotify and deezer"""
+    def login(self, force_spotify_relogin=False):
+        """Logins a client to spotify and deezer.
+
+        force_spotify_relogin clears any cached Spotify session first, so a
+        dead/mismatched cached token can't be silently reused - only pass
+        this from an explicit user-initiated reconnect, not from startup.
+        """
         self.arl = self.config.get_env_variable(self.DEEZER_ARL)
         self.dz = Deezer()  # känns shady men fuck it
         self.converter.dz = self.dz
         self.deezer_utils.dz = self.dz
         self.deezer_connected = self.dz.login_via_arl(self.arl)
-        self.spotify_connected = self.converter.login()
+        self.spotify_connected = self.converter.login(force=force_spotify_relogin)
         self.dispatcher.publish_login_status_message(
             self.spotify_connected, self.deezer_connected
         )
@@ -72,6 +77,12 @@ class Controller:
         """Creates a job and puts in the queue of the job runner. Returns task_id"""
         # måste skapa task innan den läggs i jobbkön för att kunna visa den i frontend
         if self.converter.valid_url(query):
+            still_connected = self.converter.ensure_logged_in()
+            if still_connected != self.spotify_connected:
+                self.spotify_connected = still_connected
+                self.dispatcher.publish_login_status_message(
+                    self.spotify_connected, self.deezer_connected
+                )
             task_id = self.task_controller.create_conversion_task(query)
             self.task_controller.queue_conversion_task(task_id)
             self.job_runner.push(

@@ -79,6 +79,7 @@ class TaskViewer(Static):
                     title=task.get("title", "?"),
                     artist=task.get("artist", "?"),
                     album=task.get("album", "?"),
+                    reason=task.get("reason"),
                 )
                 components.append(widget)
             elif task.get("song_id", ""):
@@ -131,6 +132,7 @@ class TaskViewer(Static):
                         title=song.get("title", "?"),
                         artist=song.get("artist", "?"),
                         album=song.get("album", "?"),
+                        reason=song.get("reason"),
                     )
                 )
 
@@ -173,9 +175,20 @@ class TaskViewer(Static):
 
     @on(TaskFailedMessage)
     def on_task_failed(self, message: TaskFailedMessage):
-        widget = self.query_one(f"#task_{message.task_id}", ProgressWidget)
-        widget.state = State.FAILED
-        widget.styles.background = "#a65454"
+        from src.frontend.screens import PopupScreen
+
+        try:
+            widget = self.query_one(f"#task_{message.task_id}", ProgressWidget)
+        except NoMatches:
+            return  # widget already removed/replaced, nothing to show it on
+
+        was_conversion = widget.conversion
+        widget.set_failed(message.reason)
+
+        if was_conversion:
+            # whole playlist/track conversion failed before any download tasks
+            # existed, so a row alone is easy to miss - surface it as a popup too.
+            self.app.push_screen(PopupScreen(f"Download failed: {message.reason}"))
 
 
 class ProgressWidget(ListItem):
@@ -234,6 +247,16 @@ class ProgressWidget(ListItem):
         self.progress = progress
         self.query_one(ProgressBar).update(progress=progress)
 
+    def set_failed(self, reason: str):
+        self.state = State.FAILED
+        self.styles.background = "#a65454"
+        label = self.query_one(".row-label", Label)
+        if self.conversion:
+            label.update(f"Conversion failed  ⚠ {reason}")
+        else:
+            base = self.format_label(self.title, self.artist, self.album)
+            label.update(f"{base}  ⚠ {reason}")
+
     @on(events.Click)
     def on_widget_click(self, event: events.Click):
         from src.frontend.screens import TaskInfoScreen
@@ -244,18 +267,19 @@ class ProgressWidget(ListItem):
 
 class ErrorWidget(ListItem):
 
-    def __init__(self, task_id, song_id, title, artist, album):
+    def __init__(self, task_id, song_id, title, artist, album, reason=None):
         super().__init__(id=task_id)
         self.song_id: str = song_id
         self.title: str = title
         self.artist: str = artist
         self.album: str = album
+        self.reason: str = reason or "Unknown error"
         self.state = State.FAILED
 
     def compose(self):
         yield Horizontal(
             Label(
-                f"{self.title} - {self.artist} - {self.album}",
+                f"{self.title} - {self.artist} - {self.album}  ⚠ {self.reason}",
                 classes="row-label",
             )
         )

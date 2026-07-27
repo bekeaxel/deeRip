@@ -69,7 +69,12 @@ class Downloader:
             self._download(task)
         except DownloadException as e:
             print(e.message)
-            self.task_controller.fail_task(task.id)
+            self.task_controller.fail_task(task.id, reason=e.message)
+        except Exception as e:
+            print(f"Unexpected error downloading track: {e}")
+            self.task_controller.fail_task(
+                task.id, reason=f"Deezer download failed: {e}"
+            )
 
     def _download(self, task: DownloadTask):
         """Downloads a track to disk. This method can be run in parallell"""

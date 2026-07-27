@@ -7,7 +7,7 @@ from uuid import UUID
 from pathlib import Path
 
 import spotipy
-from spotipy.oauth2 import SpotifyOAuth
+from spotipy.oauth2 import SpotifyOAuth, SpotifyOauthError
 from spotipy.exceptions import SpotifyException
 from spotipy.cache_handler import CacheFileHandler
 
@@ -32,6 +32,16 @@ class SpotifyConverter:
     SPOTIFY_CLIENT_TOKEN = "SPOTIFY_CLIENT_TOKEN"
     SPOTIFY_SECRET_TOKEN = "SPOTIFY_SECRET_TOKEN"
 
+    SPOTIFY_AUTH_ERROR_MESSAGE = (
+        "Spotify session expired or was revoked. Reconnect in Settings."
+    )
+    SPOTIFY_HTTP_ERROR_MESSAGES = {
+        401: SPOTIFY_AUTH_ERROR_MESSAGE,
+        403: SPOTIFY_AUTH_ERROR_MESSAGE,
+        429: "Spotify rate limit reached. Wait a moment and try again.",
+        404: "Spotify link not found.",
+    }
+
     def __init__(self, dz: Deezer, config: Config, task_controller: TaskController):
         self.config: Config = config
         self.dz: Deezer = dz
@@ -47,13 +57,20 @@ class SpotifyConverter:
             int(self.config.load_config()["concurrency_workers"])
         )
 
-    def login(self):
-        """Logins a user to spotify"""
+    def login(self, force=False):
+        """Logins a user to spotify.
+
+        force=True deletes any cached session first, so a stale/mismatched
+        cached token (e.g. left over from previously-entered credentials)
+        can't be silently reused - it forces a fresh OAuth handshake instead.
+        """
 
         client_id = self.config.get_env_variable(self.SPOTIFY_CLIENT_TOKEN)
         client_secret = self.config.get_env_variable(self.SPOTIFY_SECRET_TOKEN)
         cache_path = Path.home() / ".deeRip" / ".spotipy_cache"
         cache_path.parent.mkdir(parents=True, exist_ok=True)
+        if force and cache_path.exists():
+            cache_path.unlink()
         cache_handler = CacheFileHandler(cache_path=cache_path)
         try:
             self.sp = spotipy.Spotify(
@@ -70,6 +87,34 @@ class SpotifyConverter:
         except:
             self.logged_in = False
             return False
+
+    def ensure_logged_in(self) -> bool:
+        """Validates the cached Spotify session, refreshing the token if it's
+        merely expired. Called before starting a new job so a dead/revoked
+        session is caught immediately instead of failing deep in the pipeline."""
+        if not self.logged_in or not getattr(self, "sp", None):
+            return False
+
+        try:
+            auth_manager = self.sp.auth_manager
+            token_info = auth_manager.validate_token(
+                auth_manager.cache_handler.get_cached_token()
+            )
+            self.logged_in = token_info is not None
+        except (SpotifyOauthError, SpotifyException):
+            self.logged_in = False
+
+        return self.logged_in
+
+    def _describe_spotify_error(self, e: Exception) -> str:
+        """Turns a raw spotipy exception into a message a user can act on."""
+        if isinstance(e, SpotifyOauthError):
+            return self.SPOTIFY_AUTH_ERROR_MESSAGE
+        if isinstance(e, SpotifyException):
+            if e.http_status in self.SPOTIFY_HTTP_ERROR_MESSAGES:
+                return self.SPOTIFY_HTTP_ERROR_MESSAGES[e.http_status]
+            return f"Spotify API error ({e.http_status})."
+        return "Couldn't reach Spotify. Check your connection and try again."
 
     def valid_url(cls, link: str):
         regex = r"https:\/\/open\.spotify\.com\/(playlist|track|album)\/[a-zA-Z0-9]+(?:\?si=[a-zA-Z0-9\-\_]+(?:&pt=[a-zA-Z0-9]+)?)?"
@@ -118,12 +163,15 @@ class SpotifyConverter:
         if not link_id:
             raise InvalidSpotifyLinkException()
 
-        if (track_data := self.sp.track(link_id)) is None:
+        try:
+            track_data = self.sp.track(link_id)
+        except (SpotifyException, SpotifyOauthError) as e:
+            raise SpotifyAPIError(self._describe_spotify_error(e))
+
+        if track_data is None:
             raise InvalidSpotifyLinkException()
 
-        track = self._safe_convert_track(
-            track_data, task_id
-        )  # <- denna returnerar None när vanlig Exception fångas. Kolla varför den kastas.
+        track = self._safe_convert_track(track_data, task_id)
 
         if isinstance(track, Track):
             _, task = self.task_controller.create_download_task(
@@ -144,18 +192,31 @@ class SpotifyConverter:
         # self.dz.api.get_artist(5080) sjuk cringe bild för 'various artists'
 
         # get initial data on playlist
-        if (playlist := self.sp.playlist(link_id)) is None:
+        try:
+            playlist = self.sp.playlist(link_id)
+        except (SpotifyException, SpotifyOauthError) as e:
+            raise SpotifyAPIError(self._describe_spotify_error(e))
+
+        if playlist is None:
             raise InvalidSpotifyLinkException()
 
-        # get all tracks (pagination)
-        tracks_data = self._pull_tracks(playlist)
+        try:
+            # get all tracks (pagination)
+            tracks_data = self._pull_tracks(playlist)
 
-        spotify_tracks_data = []
-        for item in tracks_data:
-            if item["track"]:
-                spotify_tracks_data.append(item["track"])
+            spotify_tracks_data = []
+            for item in tracks_data:
+                if item["track"]:
+                    spotify_tracks_data.append(item["track"])
 
-        collection = Collection(task_id, playlist["name"])
+            collection = Collection(task_id, playlist["name"])
+        except (SpotifyException, SpotifyOauthError) as e:
+            raise SpotifyAPIError(self._describe_spotify_error(e))
+        except (KeyError, TypeError):
+            raise SpotifyAPIError(
+                "Spotify returned playlist data in an unexpected format."
+            )
+
         collection.conversion_data = spotify_tracks_data
 
         return self._convert_tracks(collection, task_id)
@@ -167,17 +228,29 @@ class SpotifyConverter:
             raise InvalidSpotifyLinkException()
 
         # get initial album data from spotify
-        if (album := self.sp.album(link_id)) is None:
+        try:
+            album = self.sp.album(link_id)
+        except (SpotifyException, SpotifyOauthError) as e:
+            raise SpotifyAPIError(self._describe_spotify_error(e))
+
+        if album is None:
             raise InvalidSpotifyLinkException()
 
-        # create download_obj
-        download_obj = Collection(task_id, album["name"])
+        try:
+            # create download_obj
+            download_obj = Collection(task_id, album["name"])
 
-        # get all tracks in case of pagination
-        tracks_data = self._pull_tracks(album)
+            # get all tracks in case of pagination
+            tracks_data = self._pull_tracks(album)
 
-        # convert all tracks to regular spotify format
-        tracks_data = [self.sp.track(track["id"]) for track in tracks_data]
+            # convert all tracks to regular spotify format
+            tracks_data = [self.sp.track(track["id"]) for track in tracks_data]
+        except (SpotifyException, SpotifyOauthError) as e:
+            raise SpotifyAPIError(self._describe_spotify_error(e))
+        except (KeyError, TypeError):
+            raise SpotifyAPIError(
+                "Spotify returned album data in an unexpected format."
+            )
 
         # conversion ready
         download_obj.conversion_data = tracks_data
@@ -240,11 +313,19 @@ class SpotifyConverter:
                 track_data["name"],
                 track_data["artists"][0]["name"],
                 track_data["album"]["name"],
+                reason=e.message,
             )
         except CancelledError as e:
             raise ConversionCancelledException()
         except Exception as e:
             print(e)
+            return ConversionError(
+                track_data["id"],
+                track_data["name"],
+                track_data["artists"][0]["name"],
+                track_data["album"]["name"],
+                reason=f"Unexpected error: {e}",
+            )
 
     def _convert_track(self, track_data: dict, task_id: UUID, size: int = 1) -> dict:
         """Convert a track using ISRC or fallback to track metadata search."""
@@ -301,4 +382,4 @@ class SpotifyConverter:
         except Exception as e:
             print(f"Unexpected error during track conversion: {e}")
             self.task_controller.increment_task_progress(task_id, (1 / size) * 100)
-            raise TrackNotFoundOnDeezerException()  # Ensure a proper exception is raised if all else fails
+            raise TrackNotFoundOnDeezerException(f"Deezer lookup failed: {e}")

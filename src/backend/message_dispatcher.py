@@ -22,8 +22,8 @@ class MessageDispatcher:
     def publish_login_status_message(self, spotify: bool, deezer: bool):
         self.publish(LoginStatusMessage(spotify, deezer))
 
-    def publish_task_failed_message(self, task_id: UUID):
-        self.publish(TaskFailedMessage(str(task_id)))
+    def publish_task_failed_message(self, task_id: UUID, reason: str = "Unknown error"):
+        self.publish(TaskFailedMessage(str(task_id), reason))
 
     def publish(self, message):
         for subscriber in self._subscribers:

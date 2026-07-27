@@ -84,10 +84,10 @@ class TaskController:
 
             task.start_task()
 
-    def fail_task(self, task_id) -> None:
+    def fail_task(self, task_id, reason: str = "Unknown error") -> None:
         if task := self._tasks.get(task_id):
             task.fail_task()
-            self._dispatcher.publish_task_failed_message(task_id)
+            self._dispatcher.publish_task_failed_message(task_id, reason)
 
     def get_task(self, task_id) -> Task | None:
         return self._tasks.get(task_id)
@@ -132,6 +132,21 @@ class TaskController:
                                 "artist": task.track.artist.name,
                                 "album": task.track.album.title,
                                 "error": task.state == State.FAILED,
+                                "progress": task.progress,
+                                "index": task.index,
+                                "state": task.state,
+                            }
+                        )
+                    elif isinstance(task.track, ConversionError):
+                        tasks.append(
+                            {
+                                "task_id": str(task.id),
+                                "song_id": task.track.id,
+                                "title": task.track.title,
+                                "artist": task.track.artist,
+                                "album": task.track.album,
+                                "error": True,
+                                "reason": task.track.reason,
                                 "progress": task.progress,
                                 "index": task.index,
                                 "state": task.state,

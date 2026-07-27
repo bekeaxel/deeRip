@@ -113,11 +113,12 @@ class Track:
 
 
 class ConversionError:
-    def __init__(self, id, title, artist, album):
+    def __init__(self, id, title, artist, album, reason="Unknown error"):
         self.id = id
         self.title = title
         self.artist = artist
         self.album = album
+        self.reason = reason
 
     def __str__(self):
         return f"title={self.title},\nartist={self.artist},\nalbum={self.album}"
