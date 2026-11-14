@@ -298,6 +298,19 @@ class LoginHeader(Header):
         self.tall = True
 
 
+class CredentialInput(Input):
+    """Input for tokens/secrets. A paste replaces the whole value instead of
+    being inserted at the cursor - clicking into a pre-filled field clears the
+    select-all, so a plain Input would append the new token to the old one."""
+
+    def _on_paste(self, event: events.Paste) -> None:
+        if text := event.text.strip():
+            self.value = text.splitlines()[0].strip()
+            self.cursor_position = len(self.value)
+        event.prevent_default()
+        event.stop()
+
+
 class SearchResult(Static):
 
     def __init__(self, id, title, artist, album, duration, widths):

@@ -191,7 +191,7 @@ class SettingsScreen(Screen):
             ),
             Horizontal(
                 Label("Spotify client token", classes="setting-descriptor"),
-                Input(
+                CredentialInput(
                     placeholder="Spotify client token",
                     value=self.config.get_env_variable("SPOTIFY_CLIENT_TOKEN"),
                     validators=[Length(minimum=32, maximum=32)],
@@ -202,7 +202,7 @@ class SettingsScreen(Screen):
             ),
             Horizontal(
                 Label("Spotify secret token", classes="setting-descriptor"),
-                Input(
+                CredentialInput(
                     placeholder="Spotify secret token",
                     value=self.config.get_env_variable("SPOTIFY_SECRET_TOKEN"),
                     password=True,
@@ -217,11 +217,11 @@ class SettingsScreen(Screen):
                 variant="primary",
                 id="spotify_connect_button",
                 classes="connect-btn",
-                tooltip="Login to spotify. Will not overwrite current session.",
+                tooltip="Save the client ID and secret and replace the current Spotify session.",
             ),
             Horizontal(
                 Label("Deezer ARL", classes="setting-descriptor"),
-                Input(
+                CredentialInput(
                     placeholder="Deezer arl",
                     value=self.config.get_env_variable("DEEZER_ARL"),
                     password=True,
@@ -293,36 +293,53 @@ class SettingsScreen(Screen):
 
     @on(Button.Pressed, "#spotify_connect_button")
     def on_spotify_connect(self, event: Button.Pressed):
+        # validate before showing the loading screen - popping it again right
+        # away races its header's mount and crashes the app
+        client = self.query_one("#spotify_client", Input)
+        secret = self.query_one("#spotify_secret", Input)
+        client_id, client_secret = client.value.strip(), secret.value.strip()
+
+        if not (
+            client.validate(client_id).is_valid
+            and secret.validate(client_secret).is_valid
+        ):
+            self.app.push_screen(
+                PopupScreen(
+                    "Spotify client ID and secret must be exactly 32 characters each. Nothing was saved."
+                )
+            )
+            return
+
         self.app.push_screen(LoadingScreen())
-        self.spotify_login()
+        self.spotify_login(client_id, client_secret)
 
     @on(Button.Pressed, "#deezer_connect_button")
     def on_deezer_connect(self, event: Button.Pressed):
+        arl = self.query_one("#arl", Input)
+        arl_value = arl.value.strip()
+
+        if not arl.validate(arl_value).is_valid:
+            self.app.push_screen(
+                PopupScreen(
+                    "Deezer ARL must be exactly 192 characters. Nothing was saved."
+                )
+            )
+            return
+
         self.app.push_screen(LoadingScreen())
-        self.deezer_login()
+        self.deezer_login(arl_value)
 
     @work(thread=True)
-    def spotify_login(self):
-        client = self.query_one("#spotify_client", Input)
-        secret = self.query_one("#spotify_secret", Input)
-
-        if (
-            client.validate(client.value).is_valid
-            and secret.validate(secret.value).is_valid
-        ):
-            self.config.update_env_variable("SPOTIFY_CLIENT_TOKEN", client.value)
-            self.config.update_env_variable("SPOTIFY_SECRET_TOKEN", secret.value)
-            self.controller.login(force_spotify_relogin=True)
+    def spotify_login(self, client_id: str, client_secret: str):
+        self.config.update_env_variable("SPOTIFY_CLIENT_TOKEN", client_id)
+        self.config.update_env_variable("SPOTIFY_SECRET_TOKEN", client_secret)
+        self.controller.login(force_spotify_relogin=True)
         self.app.call_from_thread(self.app.pop_screen)
 
     @work(thread=True)
-    def deezer_login(self):
-        arl = self.query_one("#arl", Input)
-
-        if arl.validate(arl.value).is_valid:
-            self.config.update_env_variable("DEEZER_ARL", arl.value)
-            self.controller.login()
-
+    def deezer_login(self, arl: str):
+        self.config.update_env_variable("DEEZER_ARL", arl)
+        self.controller.login()
         self.app.call_from_thread(self.app.pop_screen)
 
 

@@ -92,15 +92,18 @@ class SpotifyConverter:
         """Validates the cached Spotify session, refreshing the token if it's
         merely expired. Called before starting a new job so a dead/revoked
         session is caught immediately instead of failing deep in the pipeline."""
-        if not self.logged_in or not getattr(self, "sp", None):
+        if not getattr(self, "sp", None):
             return False
 
+        auth_manager = self.sp.auth_manager
+        cached_token = auth_manager.cache_handler.get_cached_token()
+        if cached_token is None:
+            # Fresh credentials that haven't been through browser consent yet -
+            # the job's first Spotify request opens it, so this isn't a dead session.
+            return self.logged_in
+
         try:
-            auth_manager = self.sp.auth_manager
-            token_info = auth_manager.validate_token(
-                auth_manager.cache_handler.get_cached_token()
-            )
-            self.logged_in = token_info is not None
+            self.logged_in = auth_manager.validate_token(cached_token) is not None
         except (SpotifyOauthError, SpotifyException):
             self.logged_in = False
 
