@@ -6,7 +6,7 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
-pyinstaller deeRip.spec --noconfirm
+DEERIP_VERSION="$VERSION" pyinstaller deeRip.spec --noconfirm
 
 cp assets/terminal-launcher dist/deeRip.app/Contents/MacOS/
 chmod +x dist/deeRip.app/Contents/MacOS/terminal-launcher

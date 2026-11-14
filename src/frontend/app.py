@@ -6,6 +6,7 @@ from src.frontend.messages import *
 from src.backend.main_controller import Controller
 from src.frontend.screens import *
 from src.backend.configuration import Config
+from src.backend.utils import app_version
 
 
 class DeeRipApp(App):
@@ -31,6 +32,7 @@ class DeeRipApp(App):
     def on_mount(self):
         self.push_screen("downloads")
         self.title = "spotify: not connected, deezer: not connected"
+        self.sub_title = f"deeRip {app_version()}"
 
     @on(SearchQueryRequestMessage)
     def on_search_query_request(self, message: SearchQueryRequestMessage):

@@ -3,6 +3,12 @@ import sys
 import shutil
 import os
 
+# release version from the git tag, passed in by build.sh / build-windows.ps1
+version = os.environ.get("DEERIP_VERSION", "dev")
+os.makedirs("build", exist_ok=True)
+with open(os.path.join("build", "VERSION"), "w") as f:
+    f.write(version)
+
 datas = [
     ("images/song_icon.png", "images"),
     ("config/config_default.yml", "config"),
@@ -10,7 +16,8 @@ datas = [
     ("src/frontend/styles/global.tcss", "src/frontend/styles"),
     ("src/frontend/styles/screens.tcss", "src/frontend/styles"),
     ("src/frontend/styles/widgets.tcss", "src/frontend/styles"),
-    ("assets/terminal-launcher", ".")
+    ("assets/terminal-launcher", "."),
+    ("build/VERSION", "."),
 ]
 
 hiddenimports = [
@@ -74,12 +81,13 @@ if is_macos:
             'CFBundleDisplayName': 'deeRip',
             'CFBundleExecutable': 'terminal-launcher',
             'CFBundleIdentifier': 'com.yourname.deerip',
-            'CFBundleShortVersionString': '0.3.0',
+            'CFBundleShortVersionString': version,
+            'CFBundleVersion': version,
             'NSHighResolutionCapable': True,
         },
     )
 
     # Copy launcher into .app after EXE build
-    app_path = os.path.join("dist", "deeRip.app", "Contents", "MacOS", "terminal-launcher")
+    app_path = os.path.join(DISTPATH, "deeRip.app", "Contents", "MacOS", "terminal-launcher")
     shutil.copy("assets/terminal-launcher", app_path)
     os.chmod(app_path, 0o755)
