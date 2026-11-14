@@ -41,6 +41,10 @@ class SpotifyConverter:
         429: "Spotify rate limit reached. Wait a moment and try again.",
         404: "Spotify link not found.",
     }
+    SPOTIFY_PLAYLIST_NOT_OWNED_MESSAGE = (
+        "Spotify only shares the songs of playlists you own or collaborate on. "
+        "Copy the songs into a playlist of your own and use that link."
+    )
 
     def __init__(self, dz: Deezer, config: Config, task_controller: TaskController):
         self.config: Config = config
@@ -203,14 +207,21 @@ class SpotifyConverter:
         if playlist is None:
             raise InvalidSpotifyLinkException()
 
+        # Spotify renamed the playlist's "tracks"/"track" to "items"/"item" (Feb 2026).
+        # Older apps still get both, newer apps only the new names - and no
+        # contents at all for playlists the user doesn't own or collaborate on.
+        paging = playlist.get("items") or playlist.get("tracks")
+        if paging is None:
+            raise SpotifyAPIError(self.SPOTIFY_PLAYLIST_NOT_OWNED_MESSAGE)
+
         try:
             # get all tracks (pagination)
-            tracks_data = self._pull_tracks(playlist)
+            tracks_data = self._pull_tracks(paging)
 
             spotify_tracks_data = []
-            for item in tracks_data:
-                if item["track"]:
-                    spotify_tracks_data.append(item["track"])
+            for entry in tracks_data:
+                if track := entry.get("item") or entry.get("track"):
+                    spotify_tracks_data.append(track)
 
             collection = Collection(task_id, playlist["name"])
         except (SpotifyException, SpotifyOauthError) as e:
@@ -244,7 +255,7 @@ class SpotifyConverter:
             download_obj = Collection(task_id, album["name"])
 
             # get all tracks in case of pagination
-            tracks_data = self._pull_tracks(album)
+            tracks_data = self._pull_tracks(album["tracks"])
 
             # convert all tracks to regular spotify format
             tracks_data = [self.sp.track(track["id"]) for track in tracks_data]
@@ -260,15 +271,12 @@ class SpotifyConverter:
 
         return self._convert_tracks(download_obj, task_id)
 
-    def _pull_tracks(self, data):
-        tracks_temp = []
-        tracks_temp.extend(data["tracks"]["items"])
-        if data["tracks"]["next"]:
-            next_page = self.sp.next(data["tracks"])
-            tracks_temp.extend(next_page["items"])
-            while next_page["next"]:
-                next_page = self.sp.next(next_page)
-                tracks_temp.extend(next_page["items"])
+    def _pull_tracks(self, paging):
+        """Collects the items of a Spotify paging object, following "next" pages"""
+        tracks_temp = list(paging["items"])
+        while paging["next"]:
+            paging = self.sp.next(paging)
+            tracks_temp.extend(paging["items"])
 
         return tracks_temp
 
