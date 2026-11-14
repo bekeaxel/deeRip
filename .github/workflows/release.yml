@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-14, windows-2022]
+        os: [macos-15, windows-2022]
 
     steps:
       - name: Checkout
@@ -35,14 +35,14 @@ jobs:
         shell: bash
 
       - name: Build App on macOS
-        if: matrix.os == 'macos-14'
+        if: runner.os == 'macOS'
         run: |
           version="${GITHUB_REF_NAME#v}"
           ./build.sh "$version"
         shell: bash
 
       - name: Build App on Windows
-        if: matrix.os == 'windows-2022'
+        if: runner.os == 'Windows'
         run: |
           $version = $env:GITHUB_REF_NAME
           if ($version.StartsWith("v")) { $version = $version.Substring(1) }
