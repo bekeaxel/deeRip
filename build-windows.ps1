@@ -15,6 +15,7 @@ if (-not $Version) {
 Write-Host "Building Windows version $Version"
 
 # Run PyInstaller
+$env:DEERIP_VERSION = $Version
 pyinstaller deeRip.spec --noconfirm --clean
 
 # Ensure release folder exists
